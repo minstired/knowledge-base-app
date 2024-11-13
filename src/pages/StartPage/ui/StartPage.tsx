@@ -1,5 +1,14 @@
+import "./StartPage.scss";
 import { useState } from "react";
-import { Layout, Menu, Card, Pagination, Radio, Button } from "antd";
+import {
+  Layout,
+  Menu,
+  Card,
+  Pagination,
+  Radio,
+  Button,
+  ConfigProvider,
+} from "antd";
 import {
   InfoCircleOutlined,
   SaveOutlined,
@@ -63,7 +72,6 @@ const LeftMenu = () => (
     style={{
       minWidth: "25vw",
       width: "25vw",
-      //   flex: "0 0 30vw",
       height: "100%",
       borderRight: 0,
       fontSize: "1.3rem",
@@ -136,7 +144,9 @@ const MainContent = () => {
   const [displayType, setDisplayType] = useState("cards");
 
   // Static data for two pages
-  const info = "";
+  const ontologyName = "Lorem";
+  const ontologyDescription =
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.v";
   const staticData = [
     { id: 1, title: "Item 1", content: "Content for item 1" },
     { id: 2, title: "Item 2", content: "Content for item 2" },
@@ -259,28 +269,45 @@ const MainContent = () => {
 
   return (
     <div>
+      <h1>{ontologyName}</h1>
+      <p className="descriptionArea">{ontologyDescription}</p>
       {renderContent()}
       <div
         style={{
           marginTop: "24px",
           display: "flex",
           justifyContent: "space-between",
+          height: "4rem", //change that
         }}
       >
         <Pagination
           current={currentPage}
           total={staticData.length}
           pageSize={9}
+          size="default"
           onChange={setCurrentPage}
           showSizeChanger={false}
           itemRender={(page, type) => {
-            if (type === "prev") return <Button icon={<LeftOutlined />} />;
-            if (type === "next") return <Button icon={<RightOutlined />} />;
+            if (type === "prev")
+              return (
+                <Button
+                  style={{ width: 38, height: 38 }}
+                  icon={<LeftOutlined style={{ fontSize: 16 }} />}
+                />
+              );
+            if (type === "next")
+              return (
+                <Button
+                  style={{ width: 38, height: 38 }}
+                  icon={<RightOutlined style={{ fontSize: 16 }} />}
+                />
+              );
             return page;
           }}
         />
         <Radio.Group
           value={displayType}
+          size="large"
           onChange={(e) => setDisplayType(e.target.value)}
         >
           <Radio.Button value="text">Text</Radio.Button>
@@ -296,39 +323,50 @@ const MainContent = () => {
 // Main Component
 export const StartPage = () => {
   return (
-    <Layout style={{ minHeight: "100vh", minWidth: "95vw" }}>
-      <Header style={{ background: "white", padding: 0, height: "100%" }}>
-        <TopMenu />
-      </Header>
-      <Layout style={{ display: "flex", justifyContent: "space-between" }}>
-        <Sider>
-          <LeftMenu />
-        </Sider>
-        <Layout
-          style={{
-            justifySelf: "flex-end",
-            // width: "60vw",
-            // minWidth: "60vw",
-            maxWidth: "70vw",
-            // paddingLeft: "40vw",
-            margin: "2.5vw",
-            marginBottom: "0",
-            marginTop: "1vw",
-            background: "grey",
-          }}
-        >
-          <Content
+    <ConfigProvider
+      theme={{
+        components: {
+          Pagination: {
+            itemSize: 38,
+            fontSize: 16,
+          },
+        },
+        token: {
+          // fontFamily: "Montserrat",
+        },
+      }}
+    >
+      <Layout style={{ minHeight: "100vh", minWidth: "95vw" }}>
+        <Header style={{ background: "white", padding: 0, height: "100%" }}>
+          <TopMenu />
+        </Header>
+        <Layout style={{ display: "flex", justifyContent: "space-between" }}>
+          <Sider>
+            <LeftMenu />
+          </Sider>
+          <Layout
             style={{
-              background: "#fff",
-              padding: 24,
-              margin: 0,
-              minHeight: "60vh",
+              justifySelf: "flex-end",
+              maxWidth: "70vw",
+              margin: "2.5vw",
+              marginBottom: "0",
+              marginTop: "1vw",
+              background: "grey",
             }}
           >
-            <MainContent />
-          </Content>
+            <Content
+              style={{
+                background: "#fff",
+                padding: 24,
+                margin: 0,
+                minHeight: "60vh",
+              }}
+            >
+              <MainContent />
+            </Content>
+          </Layout>
         </Layout>
       </Layout>
-    </Layout>
+    </ConfigProvider>
   );
 };
