@@ -2,171 +2,144 @@ import "./StartPage.scss";
 import { useState } from "react";
 import {
   Layout,
-  Menu,
   Card,
   Pagination,
   Radio,
   Button,
   ConfigProvider,
+  Modal,
 } from "antd";
-import {
-  InfoCircleOutlined,
-  SaveOutlined,
-  SettingOutlined,
-  QuestionCircleOutlined,
-  FileAddOutlined,
-  EyeOutlined,
-  MessageOutlined,
-  SearchOutlined,
-  HistoryOutlined,
-  FolderOpenOutlined,
-  BarChartOutlined,
-  LeftOutlined,
-  RightOutlined,
-} from "@ant-design/icons";
+import { LeftOutlined, RightOutlined } from "@ant-design/icons";
+
+import { HeaderMenu } from "../../../widgets/headerMenu";
+import { SideMenu } from "../../../widgets/sideMenu";
 
 const { Header, Sider, Content } = Layout;
 
-// TopMenu Component
-const TopMenu = () => (
-  <Menu
-    mode="horizontal"
-    style={{
-      lineHeight: "5rem",
-      alignItems: "center",
-      justifyContent: "flex-end",
-      paddingRight: "3%",
-      fontSize: "1.3em",
-      height: "5rem",
-    }}
-  >
-    <Menu.Item
-      key="about"
-      icon={<InfoCircleOutlined style={{ fontSize: "1rem" }} />}
-    >
-      О программе
-    </Menu.Item>
-    <Menu.Item key="player">Запуск/Остановка/Сброс</Menu.Item>
-    <Menu.Item key="save" icon={<SaveOutlined style={{ fontSize: "1rem" }} />}>
-      Сохранение БЗ
-    </Menu.Item>
-    <Menu.Item
-      key="settings"
-      icon={<SettingOutlined style={{ fontSize: "1rem" }} />}
-    >
-      Настройки
-    </Menu.Item>
-    <Menu.Item
-      key="help"
-      icon={<QuestionCircleOutlined style={{ fontSize: "1rem" }} />}
-    >
-      Помощь
-    </Menu.Item>
-  </Menu>
-);
+interface DataItem {
+  id: number;
+  label: string;
+  uri: string;
+  factsNum: number;
+  description: string;
+  additionalInfo: string;
+}
 
-// LeftMenu Component
-const LeftMenu = () => (
-  <Menu
-    mode="inline"
-    style={{
-      minWidth: "25vw",
-      width: "25vw",
-      height: "100%",
-      borderRight: 0,
-      fontSize: "1.3rem",
-      marginBlock: "0",
-    }}
-  >
-    <Menu.Item
-      style={{ paddingLeft: "24px", height: "4rem" }}
-      key="create"
-      icon={<FileAddOutlined style={{ fontSize: "1rem" }} />}
-    >
-      Создание/Загрузка ПрО
-    </Menu.Item>
-    <Menu.Item
-      style={{ height: "4rem" }}
-      key="view"
-      icon={<EyeOutlined style={{ fontSize: "1.1rem" }} />}
-    >
-      Просмотр ПрО
-    </Menu.Item>
-    <Menu.Item
-      style={{ height: "4rem" }}
-      key="qa"
-      icon={<MessageOutlined style={{ fontSize: "1rem" }} />}
-    >
-      Вопросы и ответы
-    </Menu.Item>
-    <Menu.Item
-      style={{ height: "4rem" }}
-      key="search"
-      icon={<SearchOutlined style={{ fontSize: "1rem" }} />}
-    >
-      Поиск и подписки
-    </Menu.Item>
-    <Menu.Item
-      style={{ height: "4rem" }}
-      key="suggestions"
-      icon={<HistoryOutlined style={{ fontSize: "1rem" }} />}
-    >
-      События и предложения
-    </Menu.Item>
-    <Menu.Item
-      style={{ height: "4rem" }}
-      key="eventlog"
-      icon={<HistoryOutlined style={{ fontSize: "1rem" }} />}
-    >
-      Журнал событий и сеансов
-    </Menu.Item>
-    <Menu.Item
-      style={{ height: "4rem" }}
-      key="library"
-      icon={<FolderOpenOutlined style={{ fontSize: "1rem" }} />}
-    >
-      Библиотека материалов
-    </Menu.Item>
-    <Menu.Item
-      style={{ height: "4rem" }}
-      key="reports"
-      icon={<BarChartOutlined style={{ fontSize: "1rem" }} />}
-    >
-      Отчеты и радары
-    </Menu.Item>
-  </Menu>
-);
-
-// MainContent Component
-// MainContent Component
 const MainContent = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [displayType, setDisplayType] = useState("cards");
+  const [displayType, setDisplayType] = useState<
+    "cards" | "text" | "diagram" | "table"
+  >("cards");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<DataItem | null>(null);
 
   // Static data for two pages
   const ontologyName = "Lorem";
   const ontologyDescription =
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.v";
-  const staticData = [
-    { id: 1, title: "Item 1", content: "Content for item 1" },
-    { id: 2, title: "Item 2", content: "Content for item 2" },
-    { id: 3, title: "Item 3", content: "Content for item 3" },
-    { id: 4, title: "Item 4", content: "Content for item 4" },
-    { id: 5, title: "Item 5", content: "Content for item 5" },
-    { id: 6, title: "Item 6", content: "Content for item 6" },
-    { id: 7, title: "Item 7", content: "Content for item 7" },
-    { id: 8, title: "Item 8", content: "Content for item 8" },
-    { id: 9, title: "Item 9", content: "Content for item 9" },
-    { id: 10, title: "Item 10", content: "Content for item 10" },
-    { id: 11, title: "Item 11", content: "Content for item 11" },
-    { id: 12, title: "Item 12", content: "Content for item 12" },
-    { id: 13, title: "Item 13", content: "Content for item 13" },
-    { id: 14, title: "Item 14", content: "Content for item 14" },
-    { id: 15, title: "Item 15", content: "Content for item 15" },
-    { id: 16, title: "Item 16", content: "Content for item 16" },
-    { id: 17, title: "Item 17", content: "Content for item 17" },
-    { id: 18, title: "Item 18", content: "Content for item 18" },
+  const staticData: DataItem[] = [
+    {
+      id: 1,
+      label: "Организации",
+      uri: "https://example.com/item1",
+      factsNum: 245,
+      description: "Последний поиск: 14.11.15",
+      additionalInfo: "Additional info for item 1",
+    },
+    {
+      id: 2,
+      label: "Персоналии",
+      uri: "https://example.com/item1",
+      factsNum: 37,
+      description: "Последний поиск: 14.11.15",
+      additionalInfo: "Additional info for item 2",
+    },
+    {
+      id: 3,
+      label: "Проекты",
+      uri: "https://example.com/item1",
+      factsNum: 17,
+      description: "Последний поиск: 14.11.15",
+      additionalInfo: "Additional info for item 3",
+    },
+    {
+      id: 4,
+      label: "Изделия",
+      uri: "https://example.com/item1",
+      factsNum: 14,
+      description: "Последний поиск: 14.11.15",
+      additionalInfo: "Additional info for item 4",
+    },
+    {
+      id: 5,
+      label: "Применения",
+      uri: "https://example.com/item1",
+      factsNum: 46,
+      description: "Последний поиск: 14.11.15",
+      additionalInfo: "Additional info for item 5",
+    },
+    {
+      id: 6,
+      label: "Результаты",
+      uri: "https://example.com/item1",
+      factsNum: 7,
+      description: "Последний поиск: 14.11.15",
+      additionalInfo: "Additional info for item 6",
+    },
+    {
+      id: 7,
+      label: "Item 1",
+      uri: "https://example.com/item1",
+      factsNum: 10,
+      description: "This is item 1",
+      additionalInfo: "Additional info for item 1",
+    },
+    {
+      id: 8,
+      label: "Item 1",
+      uri: "https://example.com/item1",
+      factsNum: 10,
+      description: "This is item 1",
+      additionalInfo: "Additional info for item 1",
+    },
+    {
+      id: 9,
+      label: "Item 1",
+      uri: "https://example.com/item1",
+      factsNum: 10,
+      description: "This is item 1",
+      additionalInfo: "Additional info for item 1",
+    },
+    {
+      id: 10,
+      label: "Item 1",
+      uri: "https://example.com/item1",
+      factsNum: 10,
+      description: "This is item 1",
+      additionalInfo: "Additional info for item 1",
+    },
+    {
+      id: 11,
+      label: "Item 1",
+      uri: "https://example.com/item1",
+      factsNum: 10,
+      description: "This is item 1",
+      additionalInfo: "Additional info for item 1",
+    },
+    {
+      id: 12,
+      label: "Item 1",
+      uri: "https://example.com/item1",
+      factsNum: 10,
+      description: "This is item 1",
+      additionalInfo: "Additional info for item 1",
+    },
   ];
+
+  const handleItemClick = (item: DataItem) => {
+    setSelectedItem(item);
+    setModalVisible(true);
+  };
 
   const renderContent = () => {
     const startIndex = (currentPage - 1) * 9;
@@ -185,10 +158,12 @@ const MainContent = () => {
             {pageData.map((item) => (
               <Card
                 key={item.id}
-                title={item.title}
-                style={{ fontSize: "1.3rem" }}
+                title={item.label}
+                style={{ fontSize: "1.3rem", cursor: "pointer" }}
+                onClick={() => handleItemClick(item)}
               >
-                <p>{item.content}</p>
+                <p>{`(${item.factsNum})`}</p>
+                <p>{item.description}</p>
               </Card>
             ))}
           </div>
@@ -197,9 +172,14 @@ const MainContent = () => {
         return (
           <div style={{ fontSize: "1.3rem" }}>
             {pageData.map((item) => (
-              <div key={item.id}>
-                <h3>{item.title}</h3>
-                <p>{item.content}</p>
+              <div
+                key={item.id}
+                onClick={() => handleItemClick(item)}
+                style={{ cursor: "pointer" }}
+              >
+                <h3>{item.label}</h3>
+                <p>{`(${item.factsNum})`}</p>
+                <p>{item.description}</p>
               </div>
             ))}
           </div>
@@ -223,13 +203,18 @@ const MainContent = () => {
             <thead>
               <tr style={{ background: "#ddd" }}>
                 <th>ID</th>
-                <th>Title</th>
-                <th>Content</th>
+                <th>Название</th>
+                <th>Кол-во фактов</th>
+                <th>Описание</th>
               </tr>
             </thead>
             <tbody>
               {pageData.map((item) => (
-                <tr key={item.id}>
+                <tr
+                  key={item.id}
+                  onClick={() => handleItemClick(item)}
+                  style={{ cursor: "pointer" }}
+                >
                   <td
                     style={{
                       border: "1px solid #ddd",
@@ -246,7 +231,7 @@ const MainContent = () => {
                       textAlign: "left",
                     }}
                   >
-                    {item.title}
+                    {item.label}
                   </td>
                   <td
                     style={{
@@ -255,7 +240,16 @@ const MainContent = () => {
                       textAlign: "left",
                     }}
                   >
-                    {item.content}
+                    {item.factsNum}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    {item.description}
                   </td>
                 </tr>
               ))}
@@ -316,6 +310,16 @@ const MainContent = () => {
           <Radio.Button value="table">Table</Radio.Button>
         </Radio.Group>
       </div>
+      <Modal
+        title={selectedItem?.label}
+        visible={modalVisible}
+        onOk={() => setModalVisible(false)}
+        onCancel={() => setModalVisible(false)}
+        width={1000}
+      >
+        <p>{selectedItem?.description}</p>
+        <p>{selectedItem?.additionalInfo}</p>
+      </Modal>
     </div>
   );
 };
@@ -330,6 +334,13 @@ export const StartPage = () => {
             itemSize: 38,
             fontSize: 16,
           },
+          Menu: {
+            iconSize: 17,
+          },
+          Card: {
+            headerFontSize: 23,
+            headerBg: "#EDEDED",
+          },
         },
         token: {
           // fontFamily: "Montserrat",
@@ -338,11 +349,11 @@ export const StartPage = () => {
     >
       <Layout style={{ minHeight: "100vh", minWidth: "95vw" }}>
         <Header style={{ background: "white", padding: 0, height: "100%" }}>
-          <TopMenu />
+          <HeaderMenu />
         </Header>
         <Layout style={{ display: "flex", justifyContent: "space-between" }}>
           <Sider>
-            <LeftMenu />
+            <SideMenu />
           </Sider>
           <Layout
             style={{
