@@ -1,4 +1,3 @@
-import { ConfigProvider } from "antd";
 import { Menu, MenuItem } from "../../../shared/ui/menu";
 import {
   FileAddOutlined,
