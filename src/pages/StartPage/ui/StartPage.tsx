@@ -1,5 +1,5 @@
 import "./StartPage.scss";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Layout,
   Card,
@@ -10,159 +10,89 @@ import {
   Modal,
 } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
-
 import { HeaderMenu } from "../../../widgets/headerMenu";
 import { SideMenu } from "../../../widgets/sideMenu";
 
 const { Header, Sider, Content } = Layout;
 
-interface DataItem {
-  id: number;
+interface OntologyItem {
   label: string;
-  uri: string;
-  factsNum: number;
   description: string;
-  additionalInfo: string;
+  uri: string;
 }
 
 const MainContent = () => {
+  const [data, setData] = useState<OntologyItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [displayType, setDisplayType] = useState<
     "cards" | "text" | "diagram" | "table"
   >("cards");
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<DataItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<OntologyItem | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Static data for two pages
-  const ontologyName = "Lorem";
-  const ontologyDescription =
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.v";
-  const staticData: DataItem[] = [
-    {
-      id: 1,
-      label: "Организации",
-      uri: "https://example.com/item1",
-      factsNum: 245,
-      description: "Последний поиск: 14.11.15",
-      additionalInfo: "Additional info for item 1",
-    },
-    {
-      id: 2,
-      label: "Персоналии",
-      uri: "https://example.com/item1",
-      factsNum: 37,
-      description: "Последний поиск: 14.11.15",
-      additionalInfo: "Additional info for item 2",
-    },
-    {
-      id: 3,
-      label: "Проекты",
-      uri: "https://example.com/item1",
-      factsNum: 17,
-      description: "Последний поиск: 14.11.15",
-      additionalInfo: "Additional info for item 3",
-    },
-    {
-      id: 4,
-      label: "Изделия",
-      uri: "https://example.com/item1",
-      factsNum: 14,
-      description: "Последний поиск: 14.11.15",
-      additionalInfo: "Additional info for item 4",
-    },
-    {
-      id: 5,
-      label: "Применения",
-      uri: "https://example.com/item1",
-      factsNum: 46,
-      description: "Последний поиск: 14.11.15",
-      additionalInfo: "Additional info for item 5",
-    },
-    {
-      id: 6,
-      label: "Результаты",
-      uri: "https://example.com/item1",
-      factsNum: 7,
-      description: "Последний поиск: 14.11.15",
-      additionalInfo: "Additional info for item 6",
-    },
-    {
-      id: 7,
-      label: "Item 1",
-      uri: "https://example.com/item1",
-      factsNum: 10,
-      description: "This is item 1",
-      additionalInfo: "Additional info for item 1",
-    },
-    {
-      id: 8,
-      label: "Item 1",
-      uri: "https://example.com/item1",
-      factsNum: 10,
-      description: "This is item 1",
-      additionalInfo: "Additional info for item 1",
-    },
-    {
-      id: 9,
-      label: "Item 1",
-      uri: "https://example.com/item1",
-      factsNum: 10,
-      description: "This is item 1",
-      additionalInfo: "Additional info for item 1",
-    },
-    {
-      id: 10,
-      label: "Item 1",
-      uri: "https://example.com/item1",
-      factsNum: 10,
-      description: "This is item 1",
-      additionalInfo: "Additional info for item 1",
-    },
-    {
-      id: 11,
-      label: "Item 1",
-      uri: "https://example.com/item1",
-      factsNum: 10,
-      description: "This is item 1",
-      additionalInfo: "Additional info for item 1",
-    },
-    {
-      id: 12,
-      label: "Item 1",
-      uri: "https://example.com/item1",
-      factsNum: 10,
-      description: "This is item 1",
-      additionalInfo: "Additional info for item 1",
-    },
-  ];
+  const itemsPerPage = 9;
+  // Fetching data
 
-  const handleItemClick = (item: DataItem) => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch("https://markiz.ml0.ru/api/ontology");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const jsonData = await response.json();
+        setData(jsonData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError(error instanceof Error ? error.message : String(error));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // const totalPages = Math.ceil(data.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = data.slice(startIndex, endIndex);
+  const totalItems = data.length;
+
+  const handleItemClick = (item: OntologyItem) => {
     setSelectedItem(item);
     setModalVisible(true);
   };
 
   const renderContent = () => {
-    const startIndex = (currentPage - 1) * 9;
-    const pageData = staticData.slice(startIndex, startIndex + 9);
+    if (isLoading) {
+      return (
+        <div className="col-span-3 text-center text-blue-700">Loading...</div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="col-span-3 text-center text-red-600">
+          Error: {error}
+        </div>
+      );
+    }
 
     switch (displayType) {
       case "cards":
         return (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "16px",
-            }}
-          >
-            {pageData.map((item) => (
+          <div className="grid grid-cols-3 gap-4">
+            {currentItems.map((item) => (
               <Card
-                key={item.id}
+                key={item.uri}
                 title={item.label}
-                style={{ fontSize: "1.3rem", cursor: "pointer" }}
+                className="text-xl cursor-pointer"
                 onClick={() => handleItemClick(item)}
               >
-                <p>{`(${item.factsNum})`}</p>
                 <p>{item.description}</p>
               </Card>
             ))}
@@ -170,15 +100,14 @@ const MainContent = () => {
         );
       case "text":
         return (
-          <div style={{ fontSize: "1.3rem" }}>
-            {pageData.map((item) => (
+          <div className="text-xl space-y-4">
+            {currentItems.map((item) => (
               <div
-                key={item.id}
+                key={item.uri}
                 onClick={() => handleItemClick(item)}
-                style={{ cursor: "pointer" }}
+                className="cursor-pointer"
               >
-                <h3>{item.label}</h3>
-                <p>{`(${item.factsNum})`}</p>
+                <h3 className="font-bold">{item.label}</h3>
                 <p>{item.description}</p>
               </div>
             ))}
@@ -192,63 +121,26 @@ const MainContent = () => {
         );
       case "table":
         return (
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              border: "1px solid #ddd",
-              fontSize: "1.3rem",
-            }}
-          >
+          <table className="w-full border-collapse border border-gray-300 text-xl">
             <thead>
-              <tr style={{ background: "#ddd" }}>
-                <th>ID</th>
-                <th>Название</th>
-                <th>Кол-во фактов</th>
-                <th>Описание</th>
+              <tr className="bg-gray-200">
+                <th className="border border-gray-300 p-2 text-left">
+                  Название
+                </th>
+                <th className="border border-gray-300 p-2 text-left">
+                  Описание
+                </th>
               </tr>
             </thead>
             <tbody>
-              {pageData.map((item) => (
+              {currentItems.map((item) => (
                 <tr
-                  key={item.id}
+                  key={item.uri}
                   onClick={() => handleItemClick(item)}
-                  style={{ cursor: "pointer" }}
+                  className="cursor-pointer hover:bg-gray-100"
                 >
-                  <td
-                    style={{
-                      border: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {item.id}
-                  </td>
-                  <td
-                    style={{
-                      border: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {item.label}
-                  </td>
-                  <td
-                    style={{
-                      border: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {item.factsNum}
-                  </td>
-                  <td
-                    style={{
-                      border: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
+                  <td className="border border-gray-300 p-2">{item.label}</td>
+                  <td className="border border-gray-300 p-2">
                     {item.description}
                   </td>
                 </tr>
@@ -263,8 +155,8 @@ const MainContent = () => {
 
   return (
     <div>
-      <h1>{ontologyName}</h1>
-      <p className="descriptionArea">{ontologyDescription}</p>
+      <h1></h1>
+      <p className="descriptionArea"></p>
       {renderContent()}
       <div
         style={{
@@ -276,7 +168,7 @@ const MainContent = () => {
       >
         <Pagination
           current={currentPage}
-          total={staticData.length}
+          total={totalItems}
           pageSize={9}
           size="default"
           onChange={setCurrentPage}
@@ -312,13 +204,12 @@ const MainContent = () => {
       </div>
       <Modal
         title={selectedItem?.label}
-        visible={modalVisible}
+        open={modalVisible}
         onOk={() => setModalVisible(false)}
         onCancel={() => setModalVisible(false)}
         width={1000}
       >
         <p>{selectedItem?.description}</p>
-        <p>{selectedItem?.additionalInfo}</p>
       </Modal>
     </div>
   );
