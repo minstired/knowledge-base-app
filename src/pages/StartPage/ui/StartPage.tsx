@@ -40,13 +40,24 @@ const MainContent = () => {
       try {
         setIsLoading(true);
         const response = await fetch("https://markiz.ml0.ru/api/ontology");
+
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          console.error(
+            `HTTP error! status: ${response.status}`,
+            response.text(),
+          );
+          throw new Error(
+            `HTTP error! status: ${response.status}, details: ${response.text()}`,
+          );
         }
-        const jsonData = await response.json();
-        setData(jsonData);
+        const rawData = await response.json();
+        const ontologiesData = rawData.ontologies || [];
+        setData(ontologiesData);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching data:", {
+          message: error instanceof Error ? error.message : String(error),
+          url: "https://markiz.ml0.ru/api/ontology",
+        });
         setError(error instanceof Error ? error.message : String(error));
       } finally {
         setIsLoading(false);
@@ -59,7 +70,10 @@ const MainContent = () => {
   // const totalPages = Math.ceil(data.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentItems = data.slice(startIndex, endIndex);
+  // const currentItems = data.slice(startIndex, endIndex);
+  const currentItems = Array.isArray(data)
+    ? data.slice(startIndex, endIndex)
+    : [];
   const totalItems = data.length;
 
   const handleItemClick = (item: OntologyItem) => {
