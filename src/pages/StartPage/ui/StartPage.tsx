@@ -39,37 +39,25 @@ interface MainContentProps {
 }
 
 const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
-  // ontologies setOntologies
   const [ontologies, setOntologies] = useState<OntologyItem[]>([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [displayType, setDisplayType] = useState<
     "cards" | "text" | "diagram" | "table"
   >("cards");
-
-  // show facts modal
   const [modalVisible, setModalVisible] = useState(false);
-  // same
   const [objects, setObjects] = useState<OntologyObject[]>([]);
-  // same
   const [facts, setFacts] = useState<ObjectFact[]>([]);
-  // same
   const [isLoading, setIsLoading] = useState(true);
-  // new TAM
   const [error, setError] = useState<string | null>(null);
-  // same
-  // same - selected Item set Selected Item
   const [selectedOntology, setSelectedOntology] = useState<OntologyItem | null>(
     null,
   );
-  // new here
   const [selectedObject, setSelectedObject] = useState<OntologyObject | null>(
     null,
   );
 
   const itemsPerPage = 9;
-
-  // Fetching data
 
   useEffect(() => {
     fetchOntologies();
@@ -111,20 +99,6 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
     }
   };
 
-  // const handleObjectClick = async (object: OntologyObject) => {
-  //   setSelectedObject(object);
-  //   try {
-  //     const response = await fetch(
-  //       `https://markiz.ml0.ru/api/ontology/facts/?object_uri=${encodeURIComponent(object.uri)}`,
-  //     );
-  //     const data = await response.json();
-  //     setFacts(data.facts || []);
-  //     setModalVisible(true);
-  //   } catch (error) {
-  //     console.error("Error fetching facts:", error);
-  //   }
-  // };
-
   const handleCreateOntology = async () => {
     setIsLoading(true);
     try {
@@ -136,8 +110,8 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       if (result.result) {
         message.success("Онтология успешно создана");
         const newOntology = {
-          label: "New Hyper Ontology",
-          description: "Newly created ontology",
+          label: "Новая онтология",
+          description: "Новое описание",
           uri: "http://www.kg.ru/new-hyper-ontology",
         };
         setSelectedOntology(newOntology);
@@ -294,15 +268,15 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       <div className="flex justify-between items-center mb-4">
         {selectedOntology && activeTab === "create" && (
           <div className="mb-4 text-green-600">
-            You have selected an ontology
+            Вы выбрали онтологию! Посмотрите данные во вкладке "Просмотр ПрО"
           </div>
         )}
         <h1>
           {activeTab === "create"
-            ? "Create/Load Ontology"
+            ? "Создание/Загрузка ПрО"
             : selectedOntology
               ? selectedOntology.label
-              : "View Ontology"}
+              : "Просмотр ПрО"}
         </h1>
         {activeTab === "create" && (
           <Button
@@ -316,12 +290,12 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       </div>
       {activeTab === "view" && !selectedOntology && (
         <div className="text-center text-xl">
-          Choose ontology on Create tab first
+          Для начала выберите онтологию.
         </div>
       )}
       {activeTab === "view" && selectedOntology && isLoading && (
         <div className="text-center text-xl">
-          The ontology objects are still loading
+          Онтология еще не загружена полностью.
         </div>
       )}
       {activeTab === "view" && selectedOntology && !isLoading && (
@@ -367,19 +341,18 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
         {selectedObject && (
           <div>
             <p>
-              <strong>Ontology:</strong> {selectedOntology?.label}
+              <strong>Онтология:</strong> {selectedOntology?.label}
             </p>
             <p>
-              <strong>Ontology Description:</strong>{" "}
-              {selectedOntology?.description}
+              <strong>Описание:</strong> {selectedOntology?.description}
             </p>
             <p>
-              <strong>Object:</strong> {selectedObject.label}
+              <strong>Объект:</strong> {selectedObject.label}
             </p>
             <p>
-              <strong>Object Description:</strong> {selectedObject.description}
+              <strong>Описание объекта:</strong> {selectedObject.description}
             </p>
-            <h3>Facts:</h3>
+            <h3>Факты:</h3>
             {facts.length > 0 ? (
               <ul>
                 {facts.map((fact) => (
