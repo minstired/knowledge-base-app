@@ -8,6 +8,7 @@ import {
   Button,
   ConfigProvider,
   Modal,
+  message,
 } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { HeaderMenu } from "../../../widgets/headerMenu";
@@ -21,66 +22,169 @@ interface OntologyItem {
   uri: string;
 }
 
-const MainContent = () => {
-  const [data, setData] = useState<OntologyItem[]>([]);
+interface OntologyObject {
+  label: string;
+  description: string;
+  uri: string;
+}
+
+interface ObjectFact {
+  label: string;
+  description: string;
+  uri: string;
+}
+
+interface MainContentProps {
+  activeTab: "create" | "view";
+}
+
+const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
+  // ontologies setOntologies
+  const [ontologies, setOntologies] = useState<OntologyItem[]>([]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [displayType, setDisplayType] = useState<
     "cards" | "text" | "diagram" | "table"
   >("cards");
+
+  // show facts modal
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<OntologyItem | null>(null);
+  // same
+  const [objects, setObjects] = useState<OntologyObject[]>([]);
+  // same
+  const [facts, setFacts] = useState<ObjectFact[]>([]);
+  // same
   const [isLoading, setIsLoading] = useState(true);
+  // new TAM
   const [error, setError] = useState<string | null>(null);
+  // same
+  // same - selected Item set Selected Item
+  const [selectedOntology, setSelectedOntology] = useState<OntologyItem | null>(
+    null,
+  );
+  // new here
+  const [selectedObject, setSelectedObject] = useState<OntologyObject | null>(
+    null,
+  );
 
   const itemsPerPage = 9;
+
   // Fetching data
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch("https://markiz.ml0.ru/api/ontology");
-
-        if (!response.ok) {
-          console.error(
-            `HTTP error! status: ${response.status}`,
-            response.text(),
-          );
-          throw new Error(
-            `HTTP error! status: ${response.status}, details: ${response.text()}`,
-          );
-        }
-        const rawData = await response.json();
-        const ontologiesData = rawData.ontologies || [];
-        setData(ontologiesData);
-      } catch (error) {
-        console.error("Error fetching data:", {
-          message: error instanceof Error ? error.message : String(error),
-          url: "https://markiz.ml0.ru/api/ontology",
-        });
-        setError(error instanceof Error ? error.message : String(error));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchOntologies();
   }, []);
 
-  // const totalPages = Math.ceil(data.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  // const currentItems = data.slice(startIndex, endIndex);
-  const currentItems = Array.isArray(data)
-    ? data.slice(startIndex, endIndex)
-    : [];
-  const totalItems = data.length;
+  useEffect(() => {
+    if (selectedOntology && activeTab === "view") {
+      fetchOntologyObjects(selectedOntology.uri);
+    }
+  }, [selectedOntology, activeTab]);
 
-  const handleItemClick = (item: OntologyItem) => {
-    setSelectedItem(item);
-    setModalVisible(true);
+  const fetchOntologies = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch("https://markiz.ml0.ru/api/ontology");
+      const data = await response.json();
+      setOntologies(data.ontologies || []);
+    } catch (error) {
+      setError("Failed to fetch ontologies");
+      console.error("Error: ", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  const fetchOntologyObjects = async (ontologyUri: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://markiz.ml0.ru/api/ontology/objects/?ontology_uri=${encodeURIComponent(ontologyUri)}`,
+      );
+      const data = await response.json();
+      setObjects(data.objects || []);
+    } catch (error) {
+      setError("Failed to fetch ontology objects");
+      console.error("Error: ", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // const handleObjectClick = async (object: OntologyObject) => {
+  //   setSelectedObject(object);
+  //   try {
+  //     const response = await fetch(
+  //       `https://markiz.ml0.ru/api/ontology/facts/?object_uri=${encodeURIComponent(object.uri)}`,
+  //     );
+  //     const data = await response.json();
+  //     setFacts(data.facts || []);
+  //     setModalVisible(true);
+  //   } catch (error) {
+  //     console.error("Error fetching facts:", error);
+  //   }
+  // };
+
+  const handleCreateOntology = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `https://markiz.ml0.ru/api/ontology/create-model/?ontology_uri=${encodeURIComponent("http://www.kg.ru/new-hyper-ontology")}`,
+        { method: "POST" },
+      );
+      const result = await response.json();
+      if (result.result) {
+        message.success("Онтология успешно создана");
+        const newOntology = {
+          label: "New Hyper Ontology",
+          description: "Newly created ontology",
+          uri: "http://www.kg.ru/new-hyper-ontology",
+        };
+        setSelectedOntology(newOntology);
+        // setActiveTab("view");
+        fetchOntologyObjects(newOntology.uri);
+      }
+    } catch (error) {
+      console.error("Error creating ontology:", error);
+      message.error("Произошла ошибка при создании онтологии");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleItemClick = (item: OntologyItem | OntologyObject) => {
+    if (activeTab === "create") {
+      setSelectedOntology(item as OntologyItem);
+      const updatedOntologies = [
+        item as OntologyItem,
+        ...ontologies.filter((ontology) => ontology.uri !== item.uri),
+      ];
+      setOntologies(updatedOntologies);
+    } else if (activeTab === "view") {
+      setSelectedObject(item as OntologyObject);
+      fetchObjectFacts(item.uri);
+    }
+  };
+
+  const fetchObjectFacts = async (objectUri: string) => {
+    try {
+      const response = await fetch(
+        `https://markiz.ml0.ru/api/ontology/facts/?object_uri=${encodeURIComponent(objectUri)}`,
+      );
+      const result = await response.json();
+      setFacts(result.facts || []);
+      setModalVisible(true);
+      const selectedObj = objects.find((obj) => obj.uri === objectUri);
+      if (selectedObj) {
+        setSelectedObject(selectedObj);
+      }
+    } catch (error) {
+      console.error("Error fetching object facts:", error);
+      message.error("Не удалось загрузить факты");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -96,6 +200,12 @@ const MainContent = () => {
       );
     }
 
+    const items = activeTab === "create" ? ontologies : objects;
+    const currentItems = items.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage,
+    );
+
     switch (displayType) {
       case "cards":
         return (
@@ -104,7 +214,13 @@ const MainContent = () => {
               <Card
                 key={item.uri}
                 title={item.label}
-                className="text-xl cursor-pointer"
+                className={`text-xl cursor-pointer ${
+                  (activeTab === "create"
+                    ? selectedOntology?.uri
+                    : selectedObject?.uri) === item.uri
+                    ? "bg-green-100"
+                    : ""
+                }`}
                 onClick={() => handleItemClick(item)}
               >
                 <p>{item.description}</p>
@@ -151,7 +267,13 @@ const MainContent = () => {
                 <tr
                   key={item.uri}
                   onClick={() => handleItemClick(item)}
-                  className="cursor-pointer hover:bg-gray-100"
+                  className={`cursor-pointer hover:bg-gray-100 ${
+                    (activeTab === "create"
+                      ? selectedOntology?.uri
+                      : selectedObject?.uri) === item.uri
+                      ? "bg-green-100"
+                      : ""
+                  }`}
                 >
                   <td className="border border-gray-300 p-2">{item.label}</td>
                   <td className="border border-gray-300 p-2">
@@ -169,61 +291,109 @@ const MainContent = () => {
 
   return (
     <div>
-      <h1></h1>
-      <p className="descriptionArea"></p>
-      {renderContent()}
-      <div
-        style={{
-          marginTop: "24px",
-          display: "flex",
-          justifyContent: "space-between",
-          height: "4rem", //change that
-        }}
-      >
-        <Pagination
-          current={currentPage}
-          total={totalItems}
-          pageSize={9}
-          size="default"
-          onChange={setCurrentPage}
-          showSizeChanger={false}
-          itemRender={(page, type) => {
-            if (type === "prev")
-              return (
-                <Button
-                  style={{ width: 38, height: 38 }}
-                  icon={<LeftOutlined style={{ fontSize: 16 }} />}
-                />
-              );
-            if (type === "next")
-              return (
-                <Button
-                  style={{ width: 38, height: 38 }}
-                  icon={<RightOutlined style={{ fontSize: 16 }} />}
-                />
-              );
-            return page;
-          }}
-        />
-        <Radio.Group
-          value={displayType}
-          size="large"
-          onChange={(e) => setDisplayType(e.target.value)}
-        >
-          <Radio.Button value="text">Text</Radio.Button>
-          <Radio.Button value="diagram">Diagram</Radio.Button>
-          <Radio.Button value="cards">Cards</Radio.Button>
-          <Radio.Button value="table">Table</Radio.Button>
-        </Radio.Group>
+      <div className="flex justify-between items-center mb-4">
+        {selectedOntology && activeTab === "create" && (
+          <div className="mb-4 text-green-600">
+            You have selected an ontology
+          </div>
+        )}
+        <h1>
+          {activeTab === "create"
+            ? "Create/Load Ontology"
+            : selectedOntology
+              ? selectedOntology.label
+              : "View Ontology"}
+        </h1>
+        {activeTab === "create" && (
+          <Button
+            type="primary"
+            className="bg-green-500 hover:bg-green-600"
+            onClick={handleCreateOntology}
+          >
+            Создать онто-модель
+          </Button>
+        )}
       </div>
+      {activeTab === "view" && !selectedOntology && (
+        <div className="text-center text-xl">
+          Choose ontology on Create tab first
+        </div>
+      )}
+      {activeTab === "view" && selectedOntology && isLoading && (
+        <div className="text-center text-xl">
+          The ontology objects are still loading
+        </div>
+      )}
+      {activeTab === "view" && selectedOntology && !isLoading && (
+        <div>
+          <p className="mb-4">{selectedOntology.description}</p>
+          {renderContent()}
+        </div>
+      )}
+      {activeTab === "create" && renderContent()}
+      {(activeTab === "create" ||
+        (activeTab === "view" && selectedOntology && !isLoading)) && (
+        <div className="mt-6 flex justify-between items-center">
+          <Pagination
+            current={currentPage}
+            total={activeTab === "create" ? ontologies.length : objects.length}
+            pageSize={itemsPerPage}
+            onChange={setCurrentPage}
+            showSizeChanger={false}
+            itemRender={(page, type) => {
+              if (type === "prev") return <Button icon={<LeftOutlined />} />;
+              if (type === "next") return <Button icon={<RightOutlined />} />;
+              return page;
+            }}
+          />
+          <Radio.Group
+            value={displayType}
+            onChange={(e) => setDisplayType(e.target.value)}
+            className="space-x-2"
+          >
+            <Radio.Button value="cards">Cards</Radio.Button>
+            <Radio.Button value="text">Text</Radio.Button>
+            <Radio.Button value="table">Table</Radio.Button>
+          </Radio.Group>
+        </div>
+      )}
       <Modal
-        title={selectedItem?.label}
+        title={selectedObject ? selectedObject.label : selectedOntology?.label}
         open={modalVisible}
         onOk={() => setModalVisible(false)}
         onCancel={() => setModalVisible(false)}
-        width={1000}
+        width={800}
       >
-        <p>{selectedItem?.description}</p>
+        {selectedObject && (
+          <div>
+            <p>
+              <strong>Ontology:</strong> {selectedOntology?.label}
+            </p>
+            <p>
+              <strong>Ontology Description:</strong>{" "}
+              {selectedOntology?.description}
+            </p>
+            <p>
+              <strong>Object:</strong> {selectedObject.label}
+            </p>
+            <p>
+              <strong>Object Description:</strong> {selectedObject.description}
+            </p>
+            <h3>Facts:</h3>
+            {facts.length > 0 ? (
+              <ul>
+                {facts.map((fact) => (
+                  <li key={fact.uri}>
+                    <p>{fact.label}</p>
+                    <p className="text-gray-600">{fact.description}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No facts available for this object.</p>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );
@@ -231,6 +401,11 @@ const MainContent = () => {
 
 // Main Component
 export const StartPage = () => {
+  const [activeTab, setActiveTab] = useState<"create" | "view">("create");
+
+  const handleTabChange = (tab: "create" | "view") => {
+    setActiveTab(tab);
+  };
   return (
     <ConfigProvider
       theme={{
@@ -258,7 +433,7 @@ export const StartPage = () => {
         </Header>
         <Layout style={{ display: "flex", justifyContent: "space-between" }}>
           <Sider>
-            <SideMenu />
+            <SideMenu onTabChange={handleTabChange} />
           </Sider>
           <Layout
             style={{
@@ -278,7 +453,7 @@ export const StartPage = () => {
                 minHeight: "60vh",
               }}
             >
-              <MainContent />
+              <MainContent activeTab={activeTab} />
             </Content>
           </Layout>
         </Layout>
