@@ -11,7 +11,7 @@ import {
 } from "@ant-design/icons";
 
 interface sideMenuProps {
-  onTabChange: (tab: "create" | "view") => void;
+  onTabChange: (tab: "create" | "view" | "qa") => void;
 }
 
 export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
@@ -32,7 +32,7 @@ export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
       key: "qa",
       title: "Вопросы и ответы",
       icon: <MessageOutlined />,
-      isDisabled: true,
+      isDisabled: false,
     },
     {
       key: "search",
@@ -66,8 +66,8 @@ export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
     },
   ];
   const handleMenuClick = (info: { key: React.Key }) => {
-    if (info.key === "create" || info.key === "view") {
-      onTabChange(info.key as "create" | "view");
+    if (info.key === "create" || info.key === "view" || info.key === "qa") {
+      onTabChange(info.key as "create" | "view" | "qa");
     }
   };
   return (

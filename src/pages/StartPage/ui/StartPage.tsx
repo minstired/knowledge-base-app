@@ -9,12 +9,14 @@ import {
   ConfigProvider,
   Modal,
   message,
+  Input,
 } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { HeaderMenu } from "../../../widgets/headerMenu";
 import { SideMenu } from "../../../widgets/sideMenu";
 
 const { Header, Sider, Content } = Layout;
+const { TextArea } = Input;
 
 interface OntologyItem {
   label: string;
@@ -35,12 +37,41 @@ interface ObjectFact {
 }
 
 interface MainContentProps {
-  activeTab: "create" | "view";
+  activeTab: "create" | "view" | "qa";
 }
+
+// const QAContent: React.FC = () => {
+//   const [inputText, setInputText] = useState("");
+
+//   const handleSubmit = () => {
+//     // TODO: Implement server submission logic
+//     console.log("Submitting:", inputText);
+//     message.success("Вопрос отправлен!");
+//   };
+
+//   const handleClear = () => {
+//     setInputText("");
+//   };
+
+//   return (
+//     <div className="flex flex-col space-y-4">
+//       <h1 className="text-2xl font-bold">Вопросы и ответы</h1>
+//       <TextArea
+//         className="w-full min-h-[200px] p-2 border rounded"
+//         value={inputText}
+//         onChange={(e) => setInputText(e.target.value)}
+//         placeholder="Введите ваш вопрос здесь..."
+//       />
+//       <div className="flex justify-end space-x-4">
+//         <Button onClick={handleClear}>Очистить</Button>
+//         <Button type="primary" onClick={handleSubmit}>Отправить</Button>
+//       </div>
+//     </div>
+//   );
+// };
 
 const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
   const [ontologies, setOntologies] = useState<OntologyItem[]>([]);
-
   const [currentPage, setCurrentPage] = useState(1);
   const [displayType, setDisplayType] = useState<
     "cards" | "text" | "diagram" | "table"
@@ -56,6 +87,7 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
   const [selectedObject, setSelectedObject] = useState<OntologyObject | null>(
     null,
   );
+  const [qaText, setQaText] = useState("");
 
   const itemsPerPage = 9;
 
@@ -115,7 +147,6 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
           uri: "http://www.kg.ru/new-hyper-ontology",
         };
         setSelectedOntology(newOntology);
-        // setActiveTab("view");
         fetchOntologyObjects(newOntology.uri);
       }
     } catch (error) {
@@ -159,6 +190,80 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       setIsLoading(false);
     }
   };
+
+  const handleQaSubmit = async () => {
+    if (!qaText.trim()) {
+      message.warning("Пожалуйста, введите текст перед отправкой");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await fetch("https://markiz.ml0.ru/api/question", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          text: qaText,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        message.success("Текст успешно отправлен");
+        console.log("Response:", data);
+        setQaText("");
+      } else {
+        throw new Error(data.detail || "Failed to submit text");
+      }
+    } catch (error) {
+      console.error("Error submitting QA text:", error);
+      message.error("Произошла ошибка при отправке текста");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClearQaText = () => {
+    setQaText("");
+  };
+
+  const renderQaContent = () => {
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl font-bold mb-4">Вопросы и ответы</h1>
+        <TextArea
+          value={qaText}
+          onChange={(e) => setQaText(e.target.value)}
+          placeholder="Введите ваш текст здесь..."
+          autoSize={{ minRows: 6, maxRows: 12 }}
+          className="text-lg"
+        />
+        <div className="flex gap-4">
+          <Button onClick={handleClearQaText} size="large">
+            Очистить
+          </Button>
+          <Button
+            type="primary"
+            onClick={handleQaSubmit}
+            loading={isLoading}
+            size="large"
+            className="bg-blue-500"
+          >
+            Отправить
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  if (activeTab === "qa") {
+    return renderQaContent();
+  }
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -262,7 +367,6 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
         return null;
     }
   };
-
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -331,6 +435,7 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
           </Radio.Group>
         </div>
       )}
+
       <Modal
         title={selectedObject ? selectedObject.label : selectedOntology?.label}
         open={modalVisible}
@@ -374,9 +479,11 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
 
 // Main Component
 export const StartPage = () => {
-  const [activeTab, setActiveTab] = useState<"create" | "view">("create");
+  const [activeTab, setActiveTab] = useState<"create" | "view" | "qa">(
+    "create",
+  );
 
-  const handleTabChange = (tab: "create" | "view") => {
+  const handleTabChange = (tab: "create" | "view" | "qa") => {
     setActiveTab(tab);
   };
   return (
