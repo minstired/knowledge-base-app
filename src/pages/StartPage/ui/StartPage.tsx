@@ -199,7 +199,7 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
 
     try {
       setIsLoading(true);
-      const response = await fetch("https://markiz.ml0.ru/api/question", {
+      const response = await fetch("https://markiz.ml0.ru:30000/api/question", {
         method: "POST",
         headers: {
           "Content-type": "application/json",
