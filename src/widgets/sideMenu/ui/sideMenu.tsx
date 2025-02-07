@@ -11,7 +11,7 @@ import {
 } from "@ant-design/icons";
 
 interface sideMenuProps {
-  onTabChange: (tab: "create" | "view" | "qa") => void;
+  onTabChange: (tab: "create" | "view" | "qa" | "reports") => void;
 }
 
 export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
@@ -62,12 +62,17 @@ export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
       key: "reports",
       title: "Отчеты и радары",
       icon: <BarChartOutlined />,
-      isDisabled: true,
+      isDisabled: false,
     },
   ];
   const handleMenuClick = (info: { key: React.Key }) => {
-    if (info.key === "create" || info.key === "view" || info.key === "qa") {
-      onTabChange(info.key as "create" | "view" | "qa");
+    if (
+      info.key === "create" ||
+      info.key === "view" ||
+      info.key === "qa" ||
+      info.key === "reports"
+    ) {
+      onTabChange(info.key as "create" | "view" | "qa" | "reports");
     }
   };
   return (
