@@ -222,28 +222,28 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
 
   const fetchChartData = async () => {
     try {
-      // const response = await fetch("https://markiz.ml0.ru/api/reports");
-      // const data = await response.json();
+      const response = await fetch("https://markiz.ml0.ru/api/statistics");
+      const data = await response.json();
 
-      const data = {
-        yearly_documents: {
-          "2020": 12,
-          "2021": 19,
-          "2022": 25,
-        },
-        ontology_distribution: {
-          Медицина: 40,
-          Физика: 30,
-          Химия: 20,
-          Математика: 10,
-        },
-      };
+      // const data = {
+      //   yearly_documents: {
+      //     "2020": 12,
+      //     "2021": 19,
+      //     "2022": 25,
+      //   },
+      //   ontology_distribution: {
+      //     Медицина: 40,
+      //     Физика: 30,
+      //     Химия: 20,
+      //     Математика: 10,
+      //   },
+      // };
 
       // Bar chart
       if (barChartRef.current) {
         barChartInstanceRef.current = new Column(barChartRef.current, {
           // data: Object.entries(data.bar_chart).map(([year, count]) =>
-          data: Object.entries(data.yearly_documents).map(([year, count]) => ({
+          data: Object.entries(data.bar_chart).map(([year, count]) => ({
             year,
             count,
           })),
@@ -278,12 +278,10 @@ const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       if (pieChartRef.current) {
         pieChartInstanceRef.current = new Pie(pieChartRef.current, {
           // data: Object.entries(data.pie_chart).map(([theme, value]) =>
-          data: Object.entries(data.ontology_distribution).map(
-            ([theme, value]) => ({
-              theme,
-              value,
-            }),
-          ),
+          data: Object.entries(data.pie_chart).map(([theme, value]) => ({
+            theme,
+            value,
+          })),
           angleField: "value",
           colorField: "theme",
           radius: 0.8,
