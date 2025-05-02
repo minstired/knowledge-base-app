@@ -1,702 +1,24 @@
 import "./StartPage.scss";
-import { useState, useEffect, useRef } from "react";
-import {
-  Layout,
-  Card,
-  Pagination,
-  Radio,
-  Button,
-  ConfigProvider,
-  Modal,
-  message,
-  Input,
-} from "antd";
-import { LeftOutlined, RightOutlined } from "@ant-design/icons";
+import { useState } from "react";
+import { Layout, ConfigProvider } from "antd";
 import { HeaderMenu } from "../../../widgets/headerMenu";
 import { SideMenu } from "../../../widgets/sideMenu";
-import { Column, Pie } from "@antv/g2plot";
+import { MainContent } from "../../../widgets/mainContent";
+import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 
 const { Header, Sider, Content } = Layout;
-const { TextArea } = Input;
-
-interface OntologyItem {
-  label: string;
-  description: string;
-  uri: string;
-}
-
-interface OntologyObject {
-  label: string;
-  description: string;
-  uri: string;
-}
-
-interface ObjectFact {
-  label: string;
-  description: string;
-  uri: string;
-}
-
-interface MainContentProps {
-  activeTab: "create" | "view" | "qa" | "reports";
-}
-
-const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
-  const [ontologies, setOntologies] = useState<OntologyItem[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [displayType, setDisplayType] = useState<
-    "cards" | "text" | "diagram" | "table"
-  >("cards");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [objects, setObjects] = useState<OntologyObject[]>([]);
-  const [facts, setFacts] = useState<ObjectFact[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedOntology, setSelectedOntology] = useState<OntologyItem | null>(
-    null,
-  );
-  const [selectedObject, setSelectedObject] = useState<OntologyObject | null>(
-    null,
-  );
-  const [qaText, setQaText] = useState("");
-  const barChartRef = useRef<HTMLDivElement>(null);
-  const pieChartRef = useRef<HTMLDivElement>(null);
-  const barChartInstanceRef = useRef<Column | null>(null);
-  const pieChartInstanceRef = useRef<Pie | null>(null);
-
-  const itemsPerPage = 9;
-
-  useEffect(() => {
-    fetchOntologies();
-  }, []);
-
-  useEffect(() => {
-    if (selectedOntology && activeTab === "view") {
-      fetchOntologyObjects(selectedOntology.uri);
-    }
-  }, [selectedOntology, activeTab]);
-
-  useEffect(() => {
-    if (activeTab === "reports") {
-      fetchChartData();
-    }
-    return () => {
-      if (barChartInstanceRef.current) {
-        barChartInstanceRef.current.destroy();
-      }
-      if (pieChartInstanceRef.current) {
-        pieChartInstanceRef.current.destroy();
-      }
-    };
-  }, [activeTab]);
-
-  const fetchOntologies = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("https://markiz.ml0.ru/api/ontology");
-      const data = await response.json();
-      setOntologies(data.ontologies || []);
-    } catch (error) {
-      setError("Failed to fetch ontologies");
-      console.error("Error: ", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchOntologyObjects = async (ontologyUri: string) => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(
-        `https://markiz.ml0.ru/api/ontology/objects/?ontology_uri=${encodeURIComponent(ontologyUri)}`,
-      );
-      const data = await response.json();
-      setObjects(data.objects || []);
-    } catch (error) {
-      setError("Failed to fetch ontology objects");
-      console.error("Error: ", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCreateOntology = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `https://markiz.ml0.ru/api/ontology/create-model/?ontology_uri=${encodeURIComponent("http://www.kg.ru/new-hyper-ontology")}`,
-        { method: "POST" },
-      );
-      const result = await response.json();
-      if (result.result) {
-        message.success("Онтология успешно создана");
-        const newOntology = {
-          label: "Новая онтология",
-          description: "Новое описание",
-          uri: "http://www.kg.ru/new-hyper-ontology",
-        };
-        setSelectedOntology(newOntology);
-        fetchOntologyObjects(newOntology.uri);
-      }
-    } catch (error) {
-      console.error("Error creating ontology:", error);
-      message.error("Произошла ошибка при создании онтологии");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleItemClick = (item: OntologyItem | OntologyObject) => {
-    if (activeTab === "create") {
-      setSelectedOntology(item as OntologyItem);
-      const updatedOntologies = [
-        item as OntologyItem,
-        ...ontologies.filter((ontology) => ontology.uri !== item.uri),
-      ];
-      setOntologies(updatedOntologies);
-    } else if (activeTab === "view") {
-      setSelectedObject(item as OntologyObject);
-      fetchObjectFacts(item.uri);
-    }
-  };
-
-  const fetchObjectFacts = async (objectUri: string) => {
-    try {
-      const response = await fetch(
-        `https://markiz.ml0.ru/api/ontology/facts/?object_uri=${encodeURIComponent(objectUri)}`,
-      );
-      const result = await response.json();
-      setFacts(result.facts || []);
-      setModalVisible(true);
-      const selectedObj = objects.find((obj) => obj.uri === objectUri);
-      if (selectedObj) {
-        setSelectedObject(selectedObj);
-      }
-    } catch (error) {
-      console.error("Error fetching object facts:", error);
-      message.error("Не удалось загрузить факты");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleQaSubmit = async () => {
-    if (!qaText.trim()) {
-      message.warning("Пожалуйста, введите текст перед отправкой");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const response = await fetch("https://markiz.ml0.ru:30000/api/question", {
-        method: "POST",
-        headers: {
-          "Content-type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          text: qaText,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        message.success("Текст успешно отправлен");
-        console.log("Response:", data);
-        setQaText("");
-      } else {
-        throw new Error(data.detail || "Failed to submit text");
-      }
-    } catch (error) {
-      console.error("Error submitting QA text:", error);
-      message.error("Произошла ошибка при отправке текста");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleClearQaText = () => {
-    setQaText("");
-  };
-
-  const fetchChartData = async () => {
-    try {
-      const response = await fetch("https://markiz.ml0.ru/api/statistics");
-      const data = await response.json();
-
-      // const data = {
-      //   yearly_documents: {
-      //     "2020": 12,
-      //     "2021": 19,
-      //     "2022": 25,
-      //   },
-      //   ontology_distribution: {
-      //     Медицина: 40,
-      //     Физика: 30,
-      //     Химия: 20,
-      //     Математика: 10,
-      //   },
-      // };
-
-      // Bar chart
-      if (barChartRef.current) {
-        barChartInstanceRef.current = new Column(barChartRef.current, {
-          // data: Object.entries(data.bar_chart).map(([year, count]) =>
-          data: Object.entries(data.bar_chart).map(([year, count]) => ({
-            year,
-            count,
-          })),
-          xField: "year",
-          yField: "count",
-          label: {
-            position: "middle",
-            style: {
-              fill: "#FFFFFF",
-              opacity: 0.6,
-            },
-          },
-          xAxis: {
-            label: {
-              autoHide: true,
-              autoRotate: false,
-            },
-          },
-          meta: {
-            year: {
-              alias: "Год",
-            },
-            count: {
-              alias: "Количество документов",
-            },
-          },
-        });
-        barChartInstanceRef.current.render();
-      }
-
-      // Pie chart
-      if (pieChartRef.current) {
-        pieChartInstanceRef.current = new Pie(pieChartRef.current, {
-          // data: Object.entries(data.pie_chart).map(([theme, value]) =>
-          data: Object.entries(data.pie_chart).map(([theme, value]) => ({
-            theme,
-            value,
-          })),
-          angleField: "value",
-          colorField: "theme",
-          radius: 0.8,
-          label: {
-            type: "outer",
-            content: "{name} {percentage}",
-          },
-          interactions: [
-            { type: "pie-legend-active" },
-            { type: "element-active" },
-          ],
-        });
-        pieChartInstanceRef.current.render();
-      }
-    } catch (error) {
-      console.error("Error fetching chart data:", error);
-    }
-  };
-
-  const renderQaContent = () => {
-    return (
-      <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold mb-4">Вопросы и ответы</h1>
-        <TextArea
-          value={qaText}
-          onChange={(e) => setQaText(e.target.value)}
-          placeholder="Введите ваш текст здесь..."
-          autoSize={{ minRows: 6, maxRows: 12 }}
-          className="text-lg"
-        />
-        <div className="flex gap-4">
-          <Button onClick={handleClearQaText} size="large">
-            Очистить
-          </Button>
-          <Button
-            type="primary"
-            onClick={handleQaSubmit}
-            loading={isLoading}
-            size="large"
-            className="bg-blue-500"
-          >
-            Отправить
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderReportsContent = () => {
-    return (
-      <div className="flex flex-col gap-8">
-        <h1 className="text-2xl font-bold">Отчеты и радары</h1>
-        <div>
-          <h2 className="text-xl font-semibold mb-4">
-            Количество документов по годам
-          </h2>
-          <div ref={barChartRef} style={{ height: "400px" }}></div>
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold mb-4">
-            Количество документов по онтологиям
-          </h2>
-          <div ref={pieChartRef} style={{ height: "400px" }}></div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="col-span-3 text-center text-blue-700">Loading...</div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="col-span-3 text-center text-red-600">
-          Error: {error}
-        </div>
-      );
-    }
-
-    const items = activeTab === "create" ? ontologies : objects;
-    const currentItems = items.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage,
-    );
-
-    switch (displayType) {
-      case "cards":
-        return (
-          <div className="grid grid-cols-3 gap-4">
-            {currentItems.map((item) => (
-              <Card
-                key={item.uri}
-                title={item.label}
-                className={`text-xl cursor-pointer ${
-                  (activeTab === "create"
-                    ? selectedOntology?.uri
-                    : selectedObject?.uri) === item.uri
-                    ? "bg-green-100"
-                    : ""
-                }`}
-                onClick={() => handleItemClick(item)}
-              >
-                <p>{item.description}</p>
-              </Card>
-            ))}
-          </div>
-        );
-      case "text":
-        return (
-          <div className="text-xl space-y-4">
-            {currentItems.map((item) => (
-              <div
-                key={item.uri}
-                onClick={() => handleItemClick(item)}
-                className="cursor-pointer"
-              >
-                <h3 className="font-bold">{item.label}</h3>
-                <p>{item.description}</p>
-              </div>
-            ))}
-          </div>
-        );
-      case "diagram":
-        return (
-          <div>
-            <p>Diagram view is not implemented in this example.</p>
-          </div>
-        );
-      case "table":
-        return (
-          <table className="w-full border-collapse border border-gray-300 text-xl">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border border-gray-300 p-2 text-left">
-                  Название
-                </th>
-                <th className="border border-gray-300 p-2 text-left">
-                  Описание
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentItems.map((item) => (
-                <tr
-                  key={item.uri}
-                  onClick={() => handleItemClick(item)}
-                  className={`cursor-pointer hover:bg-gray-100 ${
-                    (activeTab === "create"
-                      ? selectedOntology?.uri
-                      : selectedObject?.uri) === item.uri
-                      ? "bg-green-100"
-                      : ""
-                  }`}
-                >
-                  <td className="border border-gray-300 p-2">{item.label}</td>
-                  <td className="border border-gray-300 p-2">
-                    {item.description}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        );
-      default:
-        return null;
-    }
-  };
-
-  let content;
-  if (activeTab === "qa") {
-    content = renderQaContent();
-  } else if (activeTab === "reports") {
-    content = renderReportsContent();
-  } else {
-    content = (
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          {selectedOntology && activeTab === "create" && (
-            <div className="mb-4 text-green-600">
-              Вы выбрали онтологию! Посмотрите данные во вкладке "Просмотр ПрО"
-            </div>
-          )}
-          <h1>
-            {activeTab === "create"
-              ? "Создание/Загрузка ПрО"
-              : selectedOntology
-                ? selectedOntology.label
-                : "Просмотр ПрО"}
-          </h1>
-          {activeTab === "create" && (
-            <Button
-              type="primary"
-              className="bg-green-500 hover:bg-green-600"
-              onClick={handleCreateOntology}
-            >
-              Создать онто-модель
-            </Button>
-          )}
-        </div>
-        {activeTab === "view" && !selectedOntology && (
-          <div className="text-center text-xl">
-            Для начала выберите онтологию.
-          </div>
-        )}
-        {activeTab === "view" && selectedOntology && isLoading && (
-          <div className="text-center text-xl">
-            Онтология еще не загружена полностью.
-          </div>
-        )}
-        {activeTab === "view" && selectedOntology && !isLoading && (
-          <div>
-            <p className="mb-4">{selectedOntology.description}</p>
-            {renderContent()}
-          </div>
-        )}
-        {activeTab === "create" && renderContent()}
-        {(activeTab === "create" ||
-          (activeTab === "view" && selectedOntology && !isLoading)) && (
-          <div className="mt-6 flex justify-between items-center">
-            <Pagination
-              current={currentPage}
-              total={
-                activeTab === "create" ? ontologies.length : objects.length
-              }
-              pageSize={itemsPerPage}
-              onChange={setCurrentPage}
-              showSizeChanger={false}
-              itemRender={(page, type) => {
-                if (type === "prev") return <Button icon={<LeftOutlined />} />;
-                if (type === "next") return <Button icon={<RightOutlined />} />;
-                return page;
-              }}
-            />
-            <Radio.Group
-              value={displayType}
-              onChange={(e) => setDisplayType(e.target.value)}
-              className="space-x-2"
-            >
-              <Radio.Button value="cards">Cards</Radio.Button>
-              <Radio.Button value="text">Text</Radio.Button>
-              <Radio.Button value="table">Table</Radio.Button>
-            </Radio.Group>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      {content}
-      <Modal
-        title={selectedObject ? selectedObject.label : selectedOntology?.label}
-        open={modalVisible}
-        onOk={() => setModalVisible(false)}
-        onCancel={() => setModalVisible(false)}
-        width={800}
-      >
-        {selectedObject && (
-          <div>
-            <p>
-              <strong>Онтология:</strong> {selectedOntology?.label}
-            </p>
-            <p>
-              <strong>Описание:</strong> {selectedOntology?.description}
-            </p>
-            <p>
-              <strong>Объект:</strong> {selectedObject.label}
-            </p>
-            <p>
-              <strong>Описание объекта:</strong> {selectedObject.description}
-            </p>
-            <h3>Факты:</h3>
-            {facts.length > 0 ? (
-              <ul>
-                {facts.map((fact) => (
-                  <li key={fact.uri}>
-                    <p>{fact.label}</p>
-                    <p className="text-gray-600">{fact.description}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No facts available for this object.</p>
-            )}
-          </div>
-        )}
-      </Modal>
-    </div>
-  );
-};
-
-//   return (
-//     <div>
-//       <div className="flex justify-between items-center mb-4">
-//         {selectedOntology && activeTab === "create" && (
-//           <div className="mb-4 text-green-600">
-//             Вы выбрали онтологию! Посмотрите данные во вкладке "Просмотр ПрО"
-//           </div>
-//         )}
-//         <h1>
-//           {activeTab === "create"
-//             ? "Создание/Загрузка ПрО"
-//             : selectedOntology
-//               ? selectedOntology.label
-//               : "Просмотр ПрО"}
-//         </h1>
-//         {activeTab === "create" && (
-//           <Button
-//             type="primary"
-//             className="bg-green-500 hover:bg-green-600"
-//             onClick={handleCreateOntology}
-//           >
-//             Создать онто-модель
-//           </Button>
-//         )}
-//       </div>
-//       {activeTab === "view" && !selectedOntology && (
-//         <div className="text-center text-xl">
-//           Для начала выберите онтологию.
-//         </div>
-//       )}
-//       {activeTab === "view" && selectedOntology && isLoading && (
-//         <div className="text-center text-xl">
-//           Онтология еще не загружена полностью.
-//         </div>
-//       )}
-//       {activeTab === "view" && selectedOntology && !isLoading && (
-//         <div>
-//           <p className="mb-4">{selectedOntology.description}</p>
-//           {renderContent()}
-//         </div>
-//       )}
-//       {activeTab === "create" && renderContent()}
-//       {(activeTab === "create" ||
-//         (activeTab === "view" && selectedOntology && !isLoading)) && (
-//         <div className="mt-6 flex justify-between items-center">
-//           <Pagination
-//             current={currentPage}
-//             total={activeTab === "create" ? ontologies.length : objects.length}
-//             pageSize={itemsPerPage}
-//             onChange={setCurrentPage}
-//             showSizeChanger={false}
-//             itemRender={(page, type) => {
-//               if (type === "prev") return <Button icon={<LeftOutlined />} />;
-//               if (type === "next") return <Button icon={<RightOutlined />} />;
-//               return page;
-//             }}
-//           />
-//           <Radio.Group
-//             value={displayType}
-//             onChange={(e) => setDisplayType(e.target.value)}
-//             className="space-x-2"
-//           >
-//             <Radio.Button value="cards">Cards</Radio.Button>
-//             <Radio.Button value="text">Text</Radio.Button>
-//             <Radio.Button value="table">Table</Radio.Button>
-//           </Radio.Group>
-//         </div>
-//       )}
-
-//       <Modal
-//         title={selectedObject ? selectedObject.label : selectedOntology?.label}
-//         open={modalVisible}
-//         onOk={() => setModalVisible(false)}
-//         onCancel={() => setModalVisible(false)}
-//         width={800}
-//       >
-//         {selectedObject && (
-//           <div>
-//             <p>
-//               <strong>Онтология:</strong> {selectedOntology?.label}
-//             </p>
-//             <p>
-//               <strong>Описание:</strong> {selectedOntology?.description}
-//             </p>
-//             <p>
-//               <strong>Объект:</strong> {selectedObject.label}
-//             </p>
-//             <p>
-//               <strong>Описание объекта:</strong> {selectedObject.description}
-//             </p>
-//             <h3>Факты:</h3>
-//             {facts.length > 0 ? (
-//               <ul>
-//                 {facts.map((fact) => (
-//                   <li key={fact.uri}>
-//                     <p>{fact.label}</p>
-//                     <p className="text-gray-600">{fact.description}</p>
-//                   </li>
-//                 ))}
-//               </ul>
-//             ) : (
-//               <p>No facts available for this object.</p>
-//             )}
-//           </div>
-//         )}
-//       </Modal>
-//     </div>
-//   );
-// };
 
 // Main Component
 export const StartPage = () => {
   const [activeTab, setActiveTab] = useState<
     "create" | "view" | "qa" | "reports"
   >("create");
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleTabChange = (tab: "create" | "view" | "qa" | "reports") => {
     setActiveTab(tab);
   };
+
   return (
     <ConfigProvider
       theme={{
@@ -709,7 +31,7 @@ export const StartPage = () => {
             iconSize: 17,
           },
           Card: {
-            headerFontSize: 23,
+            headerFontSize: 20,
             headerBg: "#EDEDED",
           },
         },
@@ -718,35 +40,52 @@ export const StartPage = () => {
         },
       }}
     >
-      <Layout style={{ minHeight: "100vh", minWidth: "95vw" }}>
-        <Header style={{ background: "white", padding: 0, height: "100%" }}>
+      <Layout style={{ minHeight: "100vh", minWidth: "98vw" }}>
+        <Header
+          style={{
+            background: "white",
+            padding: 0,
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingInline: "16px",
+          }}
+        >
+          <div
+            onClick={() => setCollapsed(!collapsed)}
+            style={{ fontSize: "1.5em", cursor: "pointer" }}
+          >
+            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          </div>
           <HeaderMenu />
         </Header>
-        <Layout style={{ display: "flex", justifyContent: "space-between" }}>
-          <Sider>
-            <SideMenu onTabChange={handleTabChange} />
-          </Sider>
-          <Layout
+        <Layout style={{ minHeight: "100vh", minWidth: "98vw" }}>
+          <Sider
+            width={"22vw"}
+            breakpoint="md"
+            collapsedWidth={80}
+            collapsed={collapsed}
+            onBreakpoint={(broken) => setCollapsed(broken)}
             style={{
-              justifySelf: "flex-end",
-              maxWidth: "70vw",
-              margin: "2.5vw",
-              marginBottom: "0",
-              marginTop: "1vw",
-              background: "grey",
+              background: "#fff",
+              minHeight: "100vh",
+              transition: "all 0.3s ease-in-out",
             }}
           >
-            <Content
-              style={{
-                background: "#fff",
-                padding: 24,
-                margin: 0,
-                minHeight: "60vh",
-              }}
-            >
-              <MainContent activeTab={activeTab} />
-            </Content>
-          </Layout>
+            <SideMenu onTabChange={handleTabChange} />
+          </Sider>
+          <Content
+            style={{
+              background: "#fff",
+              // width: "100%",
+              padding: 24,
+              // margin: "1vw 2vw 0vw 10vw",
+              // minHeight: "60vh",
+            }}
+          >
+            <MainContent activeTab={activeTab} />
+          </Content>
         </Layout>
       </Layout>
     </ConfigProvider>

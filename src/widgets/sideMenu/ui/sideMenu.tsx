@@ -80,9 +80,9 @@ export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
       mode="inline"
       items={sideMenuItems}
       style={{
-        width: "25vw",
+        // width: "22vw",
         height: "100%",
-        fontSize: "1.3rem",
+        fontSize: "1.3em",
       }}
       itemStyle={{
         height: "4rem",

@@ -39,15 +39,12 @@ export const HeaderMenu = () => {
       mode="horizontal"
       items={headerMenuItems}
       style={{
-        alignItems: "center",
         justifyContent: "flex-end",
         paddingRight: "3%",
         fontSize: "1.3em",
-        paddingTop: "1rem",
-        // height: "100%",
       }}
       itemStyle={{
-        height: "5rem",
+        height: "4.5rem",
       }}
     />
   );
