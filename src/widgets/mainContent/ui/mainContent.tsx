@@ -32,8 +32,12 @@ interface ObjectFact {
   uri: string;
 }
 
+interface DocumentItem {
+  uri: string;
+}
+
 interface MainContentProps {
-  activeTab: "create" | "view" | "qa" | "reports";
+  activeTab: "create" | "view" | "qa" | "reports" | "library";
 }
 
 export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
@@ -58,8 +62,11 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
   const pieChartRef = useRef<HTMLDivElement>(null);
   const barChartInstanceRef = useRef<Column | null>(null);
   const pieChartInstanceRef = useRef<Pie | null>(null);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
 
   const itemsPerPage = 9;
+
+  // Hooks
 
   useEffect(() => {
     fetchOntologies();
@@ -84,6 +91,14 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       }
     };
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "library" && selectedOntology) {
+      fetchDocuments(selectedOntology.uri);
+    }
+  }, [activeTab, selectedOntology]);
+
+  // fetch functions
 
   const fetchOntologies = async () => {
     try {
@@ -184,7 +199,6 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       message.warning("Пожалуйста, введите текст перед отправкой");
       return;
     }
-
     try {
       setIsLoading(true);
       const response = await fetch("https://markiz.ml0.ru/api/question", {
@@ -286,8 +300,12 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
 
   const renderQaContent = () => {
     return (
-      <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold mb-4">Вопросы и ответы</h1>
+      <div>
+        <h1
+          style={{ fontSize: "24px", fontWeight: "600", paddingBottom: "3%" }}
+        >
+          Вопросы и ответы
+        </h1>
         <TextArea
           value={qaText}
           onChange={(e) => setQaText(e.target.value)}
@@ -295,10 +313,10 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
           autoSize={{ minRows: 6, maxRows: 12 }}
           className="text-lg"
         />
-        <div className="flex gap-4">
-          <Button onClick={handleClearQaText} size="large">
-            Очистить
-          </Button>
+        <div
+          style={{ paddingTop: "1.5%", display: "flex", gap: "1%" }}
+          className="flex gap-4"
+        >
           <Button
             type="primary"
             onClick={handleQaSubmit}
@@ -307,6 +325,9 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
             className="bg-blue-500"
           >
             Отправить
+          </Button>
+          <Button onClick={handleClearQaText} size="large">
+            Очистить
           </Button>
         </div>
       </div>
@@ -331,6 +352,57 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
         </div>
       </div>
     );
+  };
+
+  const fetchDocuments = async (ontologyUri: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://markiz.ml0.ru/api/documents/search/${encodeURIComponent(ontologyUri)}`,
+      );
+      const data = await response.json();
+      setDocuments(data.documents || []);
+    } catch (err) {
+      message.error("Не удалось получить список документов");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const findDocumentsOnline = async () => {
+    if (!selectedOntology) {
+      message.warning("Сначала выберите онтологию");
+      return;
+    }
+    try {
+      setIsLoading(true);
+      await fetch(
+        `https://markiz.ml0.ru/api/documents/search/${encodeURIComponent(selectedOntology.uri)}`,
+        {
+          method: "POST",
+        },
+      );
+      await fetchDocuments(selectedOntology.uri);
+      message.success("Поиск документов завершён");
+    } catch {
+      message.error("Ошибка при поиске документов");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const addToTrainingSet = async (documentUri: string) => {
+    try {
+      await fetch(
+        `https://markiz.ml0.ru/api/documents/${encodeURIComponent(documentUri)}`,
+        {
+          method: "POST",
+        },
+      );
+      message.success("Документ добавлен в обучающую выборку");
+    } catch {
+      message.error("Ошибка при добавлении документа");
+    }
   };
 
   const renderContent = () => {
@@ -465,6 +537,62 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
     content = renderQaContent();
   } else if (activeTab === "reports") {
     content = renderReportsContent();
+  } else if (activeTab === "library") {
+    content = (
+      <div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "24px",
+            gap: "5%",
+            paddingBottom: "3%",
+          }}
+        >
+          <h2 style={{ fontSize: "24px", fontWeight: "600" }}>
+            Библиотека материалов
+          </h2>
+          <Button
+            type="primary"
+            onClick={findDocumentsOnline}
+            style={{
+              textAlign: "center",
+              padding: "1.1rem 1.1rem",
+              borderRadius: "10px",
+              fontWeight: "500",
+              marginTop: "1%",
+            }}
+          >
+            Найти документы в интернете
+          </Button>
+        </div>
+        {isLoading ? (
+          <p>Загрузка...</p>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "20px",
+            }}
+          >
+            {documents.map((doc) => (
+              <Card
+                title={"doc.title"}
+                style={{ minHeight: "180px" }}
+                extra={
+                  <Button type="link" onClick={() => addToTrainingSet(doc.uri)}>
+                    Добавить в обучающую выборку
+                  </Button>
+                }
+              >
+                <p>...</p>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   } else {
     content = (
       <div style={{ maxHeight: "100%" }}>

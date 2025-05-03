@@ -11,7 +11,7 @@ import {
 } from "@ant-design/icons";
 
 interface sideMenuProps {
-  onTabChange: (tab: "create" | "view" | "qa" | "reports") => void;
+  onTabChange: (tab: "create" | "view" | "qa" | "reports" | "library") => void;
 }
 
 export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
@@ -56,7 +56,7 @@ export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
       key: "library",
       title: "Библиотека материалов",
       icon: <FolderOpenOutlined />,
-      isDisabled: true,
+      isDisabled: false,
     },
     {
       key: "reports",
@@ -70,9 +70,10 @@ export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
       info.key === "create" ||
       info.key === "view" ||
       info.key === "qa" ||
-      info.key === "reports"
+      info.key === "reports" ||
+      info.key === "library"
     ) {
-      onTabChange(info.key as "create" | "view" | "qa" | "reports");
+      onTabChange(info.key as "create" | "view" | "qa" | "reports" | "library");
     }
   };
   return (
