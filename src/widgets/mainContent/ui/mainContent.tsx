@@ -8,6 +8,7 @@ import {
   message,
   Input,
   Table,
+  Tag,
 } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { Column, Pie } from "@antv/g2plot";
@@ -36,8 +37,16 @@ interface DocumentItem {
   uri: string;
 }
 
+interface WebPage {
+  typeURI: string;
+  label: string;
+  properties: any[];
+  uri: string;
+  status: "included" | "excluded";
+}
+
 interface MainContentProps {
-  activeTab: "create" | "view" | "qa" | "reports" | "library";
+  activeTab: "create" | "view" | "qa" | "search" | "reports" | "library";
 }
 
 export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
@@ -63,6 +72,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
   const barChartInstanceRef = useRef<Column | null>(null);
   const pieChartInstanceRef = useRef<Pie | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [webPages, setWebPages] = useState<WebPage[]>([]);
 
   const itemsPerPage = 9;
 
@@ -75,6 +85,8 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
   useEffect(() => {
     if (selectedOntology && activeTab === "view") {
       fetchOntologyObjects(selectedOntology.uri);
+      setFacts([]);
+      setSelectedObject(null);
     }
   }, [selectedOntology, activeTab]);
 
