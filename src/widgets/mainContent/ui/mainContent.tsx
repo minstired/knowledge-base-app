@@ -34,14 +34,16 @@ interface ObjectFact {
 }
 
 interface DocumentItem {
-  uri: string;
+  label: string;
+  URI: string;
+  linkedRelations: [];
 }
 
 interface WebPage {
-  typeURI: string;
+  URI: string;
   label: string;
-  properties: any[];
-  uri: string;
+  typeURI: string;
+  linkedRelations: any[];
   status: "included" | "excluded";
 }
 
@@ -107,6 +109,12 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
   useEffect(() => {
     if (activeTab === "library" && selectedOntology) {
       fetchDocuments(selectedOntology.uri);
+    }
+  }, [activeTab, selectedOntology]);
+
+  useEffect(() => {
+    if (activeTab === "search" && selectedOntology) {
+      fetchWebPages(selectedOntology.uri); ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
   }, [activeTab, selectedOntology]);
 
@@ -375,6 +383,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       const data = await response.json();
       setDocuments(data.documents || []);
     } catch (err) {
+      console.error("Error fetching documents:", err);
       message.error("Не удалось получить список документов");
     } finally {
       setIsLoading(false);
@@ -400,6 +409,88 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       message.error("Ошибка при поиске документов");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchWebPages = async (ontologyUri: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://markiz.ml0.ru/api/web-page/search/${encodeURIComponent(ontologyUri)}`,
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setWebPages(data.web_pages || []);
+    } catch (err) {
+      console.error("Error fetching web pages:", err);
+      message.error("Не удалось получить список веб-страниц");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const findWebPagesOnline = async () => {
+    if (!selectedOntology) {
+      message.warning("Сначала выберите онтологию");
+      return;
+    }
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://markiz.ml0.ru/api/web-page/search/${encodeURIComponent(selectedOntology.uri)}`,
+        {
+          method: "POST",
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Ошибка при поиске веб-страниц");
+      }
+
+      const data = await response.json();
+      setWebPages(data.web_pages || []);
+      message.success("Поиск веб-страниц завершён");
+    } catch (error) {
+      console.error("Error searching web pages:", error);
+      message.error(
+        error instanceof Error
+          ? error.message
+          : "Ошибка при поиске веб-страниц",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const addWebPageToTrainingSet = async (webPageUri: string) => {
+    try {
+      const response = await fetch(
+        `https://markiz.ml0.ru/api/web-page/${encodeURIComponent(webPageUri)}`,
+        {
+          method: "POST",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Ошибка при добавлении веб-страницы");
+      }
+
+      const data = await response.json();
+      if (data.result) {
+        message.success("Веб-страница добавлена в обучающую выборку");
+        // Обновляем список веб-страниц после добавления
+        if (selectedOntology) {
+          await fetchWebPages(selectedOntology.uri);
+        }
+      } else {
+        message.error("Не удалось добавить веб-страницу в обучающую выборку");
+      }
+    } catch (error) {
+      console.error("Error adding web page to training set:", error);
+      message.error("Ошибка при добавлении веб-страницы");
     }
   };
 
@@ -589,19 +680,126 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
             }}
           >
             {documents.map((doc) => (
-              <Card
-                title={"doc.title"}
-                style={{ minHeight: "180px" }}
-                extra={
-                  <Button type="link" onClick={() => addToTrainingSet(doc.uri)}>
-                    Добавить в обучающую выборку
-                  </Button>
-                }
-              >
-                <p>...</p>
+              <Card title={doc.label} style={{ minHeight: "180px" }}>
+                <p>URI: {doc.URI}</p>
+                <Button type="link" onClick={() => addToTrainingSet(doc.URI)}>
+                  Добавить в обучающую выборку
+                </Button>
               </Card>
             ))}
           </div>
+        )}
+      </div>
+    );
+  } else if (activeTab === "search") {
+    content = (
+      <div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "24px",
+            gap: "5%",
+            paddingBottom: "3%",
+          }}
+        >
+          <h2 style={{ fontSize: "24px", fontWeight: "600" }}>
+            Поиск веб-страниц
+          </h2>
+
+          <Button
+            type="primary"
+            onClick={findWebPagesOnline}
+            // loading = {isLoading}
+            style={{
+              textAlign: "center",
+              padding: "1.1rem 1.1rem",
+              borderRadius: "10px",
+              fontWeight: "500",
+              marginTop: "1%",
+            }}
+          >
+            Найти веб-страницы в интернете
+          </Button>
+        </div>
+
+        {!selectedOntology && (
+          <p className="text-center text-gray-600 text-base">
+            Для начала выберите онтологию в разделе "Создание/Загрузка ПрО".
+          </p>
+        )}
+
+        {selectedOntology && (
+          <>
+            <p style={{ marginBottom: "20px", fontSize: "16px" }}>
+              Выбранная онтология: <strong>{selectedOntology.label}</strong>
+            </p>
+
+            {webPages.length > 0 && (
+              <div style={{ marginBottom: "32px" }}>
+                <h3
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "600",
+                    marginBottom: "16px",
+                  }}
+                >
+                  Веб-страницы ({webPages.length})
+                </h3>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
+                    gap: "20px",
+                  }}
+                >
+                  {webPages.map((webPage) => (
+                    <Card
+                      key={webPage.URI}
+                      title={webPage.label}
+                      style={{ minHeight: "180px" }}
+                      extra={
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <Tag
+                            color={
+                              webPage.status === "included" ? "green" : "orange"
+                            }
+                          >
+                            {webPage.status === "included"
+                              ? "Включено"
+                              : "Исключено"}
+                          </Tag>
+                        </div>
+                      }
+                    >
+                      <p style={{ color: "#666", fontSize: "14px" }}>
+                        URI: {webPage.URI}
+                      </p>
+                      {/* <p style={{ color: "#666", fontSize: "14px" }}>
+                        Тип: ...
+                      </p> */}
+
+                      {webPage.status !== "included" && (
+                        <Button
+                          type="link"
+                          size="small"
+                          onClick={() => addWebPageToTrainingSet(webPage.URI)}
+                        >
+                          Добавить в обучающую выборку
+                        </Button>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     );

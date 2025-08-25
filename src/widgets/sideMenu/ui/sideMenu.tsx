@@ -38,7 +38,7 @@ export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
       key: "search",
       title: "Поиск и подписки",
       icon: <SearchOutlined />,
-      isDisabled: true,
+      isDisabled: false,
     },
     {
       key: "suggestions",
@@ -70,6 +70,7 @@ export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
       info.key === "create" ||
       info.key === "view" ||
       info.key === "qa" ||
+      info.key === "search" ||
       info.key === "reports" ||
       info.key === "library"
     ) {
