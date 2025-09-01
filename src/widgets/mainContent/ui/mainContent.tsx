@@ -180,7 +180,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
     if (activeTab === "create") {
       setSelectedOntology(item as OntologyItem);
       message.success(
-        'Вы выбрали онтологию! Посмотрите данные во вкладке "Просмотр ПрО"',
+        'Вы выбрали онтологию! Посмотрите данные во вкладке "Просмотр онтомодели"',
         3,
       );
       const updatedOntologies = [
@@ -725,7 +725,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
 
         {!selectedOntology && (
           <p className="text-center text-gray-600 text-base">
-            Для начала выберите онтологию в разделе "Создание/Загрузка ПрО".
+            Для начала выберите онтологию в разделе "Прикладные онтологии".
           </p>
         )}
 
@@ -773,7 +773,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
                           >
                             {webPage.status === "included"
                               ? "Включено"
-                              : "Исключено"}
+                              : "Не включено"}
                           </Tag>
                         </div>
                       }
@@ -818,8 +818,8 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
         >
           <span style={{ fontSize: "24px", fontWeight: 600 }}>
             {activeTab === "create"
-              ? "Создание/Загрузка ПрО"
-              : selectedOntology?.label || "Просмотр ПрО"}
+              ? "Прикладные онтологии"
+              : selectedOntology?.label || "Прикладные онтологии"}
           </span>
 
           {activeTab === "create" && (
