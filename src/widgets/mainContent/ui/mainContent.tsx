@@ -151,28 +151,22 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
   };
 
   const handleCreateOntology = async () => {
-    setIsLoading(true);
+    if (!selectedOntology) {
+      message.warning("Сначала выберите онтологию");
+      return;
+    }
     try {
       const response = await fetch(
-        `https://markiz.ml0.ru/api/ontology/create-model/?ontology_uri=${encodeURIComponent("http://www.kg.ru/new-hyper-ontology")}`,
+        `https://markiz.ml0.ru/api/ontology/create-model/?ontology_uri=${encodeURIComponent(selectedOntology.uri)}`,
         { method: "POST" },
       );
       const result = await response.json();
       if (result.result) {
         message.success("Онтология успешно создана");
-        const newOntology = {
-          label: "Новая онтология",
-          description: "Новое описание",
-          uri: "http://www.kg.ru/new-hyper-ontology",
-        };
-        setSelectedOntology(newOntology);
-        fetchOntologyObjects(newOntology.uri);
       }
     } catch (error) {
       console.error("Ошибка при создании онтологии:", error);
       message.error("Произошла ошибка при создании онтологии");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -180,7 +174,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
     if (activeTab === "create") {
       setSelectedOntology(item as OntologyItem);
       message.success(
-        'Вы выбрали онтологию! Посмотрите данные во вкладке "Просмотр ПрО"',
+        'Вы выбрали онтологию! Посмотрите данные во вкладке "Просмотр онтомодели"',
         3,
       );
       const updatedOntologies = [
@@ -728,7 +722,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
 
         {!selectedOntology && (
           <p className="text-center text-gray-600 text-base">
-            Для начала выберите онтологию в разделе "Создание/Загрузка ПрО".
+            Для начала выберите онтологию в разделе "Прикладные онтологии".
           </p>
         )}
 
@@ -776,7 +770,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
                           >
                             {webPage.status === "included"
                               ? "Включено"
-                              : "Исключено"}
+                              : "Не включено"}
                           </Tag>
                         </div>
                       }
@@ -821,8 +815,8 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
         >
           <span style={{ fontSize: "24px", fontWeight: 600 }}>
             {activeTab === "create"
-              ? "Создание/Загрузка ПрО"
-              : selectedOntology?.label || "Просмотр ПрО"}
+              ? "Прикладные онтологии"
+              : selectedOntology?.label || "Прикладные онтологии"}
           </span>
 
           {activeTab === "create" && (

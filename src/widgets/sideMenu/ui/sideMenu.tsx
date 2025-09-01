@@ -5,26 +5,26 @@ import {
   EyeOutlined,
   MessageOutlined,
   SearchOutlined,
-  HistoryOutlined,
+//  HistoryOutlined,
   FolderOpenOutlined,
   BarChartOutlined,
 } from "@ant-design/icons";
 
 interface sideMenuProps {
-  onTabChange: (tab: "create" | "view" | "qa" | "reports" | "library") => void;
+  onTabChange: (tab: "create" | "view" | "qa" | "search" | "reports" | "library") => void;
 }
 
 export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
   const sideMenuItems: MenuItem[] = [
     {
       key: "create",
-      title: "Создание/Загрузка ПрО",
+      title: "Прикладные онтологии",
       icon: <FileAddOutlined />,
       isDisabled: false,
     },
     {
       key: "view",
-      title: "Просмотр ПрО",
+      title: "Просмотр онтомодели",
       icon: <EyeOutlined />,
       isDisabled: false,
     },
@@ -35,32 +35,32 @@ export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
       isDisabled: false,
     },
     {
-      key: "search",
-      title: "Поиск и подписки",
-      icon: <SearchOutlined />,
-      isDisabled: false,
-    },
-    {
-      key: "suggestions",
-      title: "События и предложения",
-      icon: <HistoryOutlined />,
-      isDisabled: true,
-    },
-    {
-      key: "eventLog",
-      title: "Журнал событий и сеансов",
-      icon: <HistoryOutlined />,
-      isDisabled: true,
-    },
-    {
       key: "library",
-      title: "Библиотека материалов",
+      title: "Поиск в библиотеке",
       icon: <FolderOpenOutlined />,
       isDisabled: false,
     },
     {
+      key: "search",
+      title: "Поиск в интернете",
+      icon: <SearchOutlined />,
+      isDisabled: false,
+    },
+//    {
+//      key: "suggestions",
+//      title: "События и предложения",
+//      icon: <HistoryOutlined />,
+//      isDisabled: true,
+//    },
+//    {
+//     key: "eventLog",
+//      title: "Журнал событий и сеансов",
+//      icon: <HistoryOutlined />,
+//      isDisabled: true,
+//    },
+    {
       key: "reports",
-      title: "Отчеты и радары",
+      title: "Статистика",
       icon: <BarChartOutlined />,
       isDisabled: false,
     },
@@ -74,7 +74,7 @@ export const SideMenu: FC<sideMenuProps> = ({ onTabChange }) => {
       info.key === "reports" ||
       info.key === "library"
     ) {
-      onTabChange(info.key as "create" | "view" | "qa" | "reports" | "library");
+      onTabChange(info.key as "create" | "view" | "qa" | "search" | "reports" | "library");
     }
   };
   return (

@@ -1,7 +1,7 @@
 import "./StartPage.scss";
 import { useState } from "react";
 import { Layout, ConfigProvider } from "antd";
-import { HeaderMenu } from "../../../widgets/headerMenu";
+// import { HeaderMenu } from "../../../widgets/headerMenu";
 import { SideMenu } from "../../../widgets/sideMenu";
 import { MainContent } from "../../../widgets/mainContent";
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
@@ -11,11 +11,11 @@ const { Header, Sider, Content } = Layout;
 // Main Component
 export const StartPage = () => {
   const [activeTab, setActiveTab] = useState<
-    "create" | "view" | "qa" | "reports"
+    "create" | "view" | "qa" | "search" | "reports" | "library"
   >("create");
   const [collapsed, setCollapsed] = useState(false);
 
-  const handleTabChange = (tab: "create" | "view" | "qa" | "reports") => {
+  const handleTabChange = (tab: "create" | "view" | "qa" | "search" | "reports" | "library" ) => {
     setActiveTab(tab);
   };
 
@@ -58,7 +58,7 @@ export const StartPage = () => {
           >
             {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           </div>
-          <HeaderMenu />
+          {/* <HeaderMenu /> */}
         </Header>
         <Layout style={{ minHeight: "100vh", minWidth: "98vw" }}>
           <Sider
