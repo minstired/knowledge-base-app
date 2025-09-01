@@ -652,6 +652,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
           <h2 style={{ fontSize: "24px", fontWeight: "600" }}>
             Библиотека материалов
           </h2>
+
           <Button
             type="primary"
             onClick={findDocumentsOnline}
@@ -666,7 +667,19 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
             Найти документы в интернете
           </Button>
         </div>
-        {isLoading ? (
+        {!selectedOntology && (
+          <p className="text-center text-gray-600 text-base">
+            Для начала выберите онтологию в разделе "Прикладные онтологии".
+          </p>
+        )}
+
+        {selectedOntology && (
+          <p style={{ marginBottom: "20px", fontSize: "16px" }}>
+            Выбранная онтология: <strong>{selectedOntology.label}</strong>
+          </p>
+        )}
+
+        {selectedOntology && isLoading ? (
           <p>Загрузка...</p>
         ) : (
           <div
