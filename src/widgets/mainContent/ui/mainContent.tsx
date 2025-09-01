@@ -151,28 +151,22 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
   };
 
   const handleCreateOntology = async () => {
-    setIsLoading(true);
+    if (!selectedOntology) {
+      message.warning("Сначала выберите онтологию");
+      return;
+    }
     try {
       const response = await fetch(
-        `https://markiz.ml0.ru/api/ontology/create-model/?ontology_uri=${encodeURIComponent("http://www.kg.ru/new-hyper-ontology")}`,
+        `https://markiz.ml0.ru/api/ontology/create-model/?ontology_uri=${encodeURIComponent(selectedOntology.uri)}`,
         { method: "POST" },
       );
       const result = await response.json();
       if (result.result) {
         message.success("Онтология успешно создана");
-        const newOntology = {
-          label: "Новая онтология",
-          description: "Новое описание",
-          uri: "http://www.kg.ru/new-hyper-ontology",
-        };
-        setSelectedOntology(newOntology);
-        fetchOntologyObjects(newOntology.uri);
       }
     } catch (error) {
       console.error("Ошибка при создании онтологии:", error);
       message.error("Произошла ошибка при создании онтологии");
-    } finally {
-      setIsLoading(false);
     }
   };
 
