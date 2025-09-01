@@ -496,12 +496,15 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
 
   const addToTrainingSet = async (documentUri: string) => {
     try {
-      await fetch(
+      const response = await fetch(
         `https://markiz.ml0.ru/api/documents/${encodeURIComponent(documentUri)}`,
         {
           method: "POST",
         },
       );
+      if (!response.ok) {
+        throw new Error("Ошибка при добавлении документа");
+      }
       message.success("Документ добавлен в обучающую выборку");
     } catch {
       message.error("Ошибка при добавлении документа");
