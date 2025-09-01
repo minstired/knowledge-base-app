@@ -38,6 +38,7 @@ interface DocumentItem {
   label: string;
   URI: string;
   pdf_link: string;
+  status: "included" | "excluded";
 }
 
 interface WebPage {
@@ -46,6 +47,7 @@ interface WebPage {
   typeURI: string;
   linkedRelations: any[];
   status: "included" | "excluded";
+  url: string;
 }
 
 interface MainContentProps {
@@ -69,6 +71,8 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
   const [selectedObject, setSelectedObject] = useState<OntologyObject | null>(
     null,
   );
+  const [qadata, setQaData] = useState("");
+  const [qaQuestion, setQaQuestion] = useState("");
   const [qaText, setQaText] = useState("");
   const barChartRef = useRef<HTMLDivElement>(null);
   const pieChartRef = useRef<HTMLDivElement>(null);
@@ -215,6 +219,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       return;
     }
     try {
+      setQaQuestion(qaText);
       setIsLoading(true);
       const response = await fetch("https://markiz.ml0.ru/api/question", {
         method: "POST",
@@ -232,6 +237,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       if (response.ok) {
         message.success("Текст успешно отправлен");
         console.log("Response:", data);
+        setQaData(data.text);
         setQaText("");
       } else {
         throw new Error(data.detail || "Failed to submit text");
@@ -249,6 +255,10 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
   };
 
   const fetchChartData = async () => {
+    if (!selectedOntology) {
+      message.warning("Сначала выберите онтологию");
+      return;
+    }
     try {
       const response = await fetch("https://markiz.ml0.ru/api/statistics");
       const data = await response.json();
@@ -321,6 +331,9 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
         >
           Вопросы и ответы
         </h1>
+        <h2 style={{ fontSize: "28px" }}>
+          Задайте вопрос
+        </h2>
         <TextArea
           value={qaText}
           onChange={(e) => setQaText(e.target.value)}
@@ -345,6 +358,14 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
             Очистить
           </Button>
         </div>
+        <h2 style={{ fontSize: "28px" }}>
+          Вопрос
+        </h2>
+        <p> {qaQuestion} </p>
+        <h2 style={{ fontSize: "28px" }}>
+          Ответ
+        </h2>
+        <p> {qadata} </p>
       </div>
     );
   };
@@ -785,7 +806,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
                   style={{ minHeight: "180px" }}
                 >
                   <p>
-                    Link:{" "}
+                    Источник :{" "}
                     <a
                       href={doc.pdf_link}
                       target="_blank"
@@ -794,10 +815,17 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
                       {doc.pdf_link}
                     </a>
                   </p>
-                  <p>URI: {doc.URI}</p>
-                  <Button type="link" onClick={() => addToTrainingSet(doc.URI)}>
-                    Добавить в обучающую выборку
-                  </Button>
+                  {/* <p>URI: {doc.URI}</p> */}
+
+                  {doc.status !== "included" && (
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={() => addToTrainingSet(doc.URI)}
+                    >
+                      Добавить в обучающую выборку
+                    </Button>
+                  )}
                 </Card>
               ))}
             </div>{" "}
@@ -870,7 +898,20 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
                   {webPages.map((webPage) => (
                     <Card
                       key={webPage.URI}
-                      title={webPage.label}
+                      title={
+                        <Tooltip title={webPage.label}>
+                          <div
+                            style={{
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "100%",
+                            }}
+                          >
+                            {webPage.label}
+                          </div>
+                        </Tooltip>
+                      }
                       style={{ minHeight: "180px" }}
                       extra={
                         <div
@@ -893,7 +934,17 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
                       }
                     >
                       <p style={{ color: "#666", fontSize: "14px" }}>
-                        URI: {webPage.URI}
+                        <p>
+                          Ссылка :{" "}
+                          <a
+                            href={webPage.url}
+                            target="_blank"
+                            rel="link"
+                          >
+                            {webPage.url}
+                          </a>
+                        </p>
+                        {/* URI: {webPage.URI} */}
                       </p>
                       {/* <p style={{ color: "#666", fontSize: "14px" }}>
                         Тип: ...
