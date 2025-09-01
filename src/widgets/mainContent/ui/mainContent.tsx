@@ -9,6 +9,7 @@ import {
   Input,
   Table,
   Tag,
+  Tooltip,
 } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { Column, Pie } from "@antv/g2plot";
@@ -36,7 +37,7 @@ interface ObjectFact {
 interface DocumentItem {
   label: string;
   URI: string;
-  linkedRelations: [];
+  pdf_link: string;
 }
 
 interface WebPage {
@@ -406,6 +407,58 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
     }
   };
 
+  const downloadDocumentsReport = async () => {
+    if (!selectedOntology) {
+      message.warning("Сначала выберите онтологию");
+      return;
+    }
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://markiz.ml0.ru/api/report/${encodeURIComponent(selectedOntology.uri)}`,
+        {
+          method: "GET",
+        },
+      );
+      if (response.status === 404) {
+        message.warning("Отчет не готов");
+        return;
+      }
+      if (!response.ok) {
+        throw new Error(`Ошибка загрузки отчёта: ${response.status}`);
+      }
+      const blob = await response.blob();
+
+      // Пытаемся достать имя файла из заголовка
+      let filename = "report";
+      const cd = response.headers.get("Content-Disposition");
+      if (cd) {
+        const m =
+          cd.match(/filename\*=UTF-8''([^;]+)$/i) ||
+          cd.match(/filename="?([^"]+)"?/i);
+        if (m) filename = decodeURIComponent(m[1]);
+      } else if (blob.type) {
+        const ext = blob.type.split("/").pop();
+        if (ext) filename = `${filename}.${ext}`;
+      }
+
+      const link = document.createElement("a");
+      const objectUrl = window.URL.createObjectURL(blob);
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+      message.success("Отчет скачан");
+    } catch (e) {
+      message.error("Ошибка при скачивании отчёта");
+      console.error("Ошибка при скачивании отчёта:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const fetchWebPages = async (ontologyUri: string) => {
     try {
       setIsLoading(true);
@@ -666,6 +719,19 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
           >
             Найти документы в интернете
           </Button>
+          <Button
+            type="primary"
+            onClick={downloadDocumentsReport}
+            style={{
+              textAlign: "center",
+              padding: "1.1rem 1.1rem",
+              borderRadius: "10px",
+              fontWeight: "500",
+              marginTop: "1%",
+            }}
+          >
+            Скачать отчет
+          </Button>
         </div>
         {!selectedOntology && (
           <p className="text-center text-gray-600 text-base">
@@ -682,21 +748,59 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
         {selectedOntology && isLoading ? (
           <p>Загрузка...</p>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-              gap: "20px",
-            }}
-          >
-            {documents.map((doc) => (
-              <Card title={doc.label} style={{ minHeight: "180px" }}>
-                <p>URI: {doc.URI}</p>
-                <Button type="link" onClick={() => addToTrainingSet(doc.URI)}>
-                  Добавить в обучающую выборку
-                </Button>
-              </Card>
-            ))}
+          <div style={{ marginBottom: "32px" }}>
+            <h3
+              style={{
+                fontSize: "20px",
+                fontWeight: "600",
+                marginBottom: "16px",
+              }}
+            >
+              Документы ({documents.length})
+            </h3>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                gap: "20px",
+              }}
+            >
+              {documents.map((doc) => (
+                <Card
+                  key={doc.URI}
+                  title={
+                    <Tooltip title={doc.label}>
+                      <div
+                        style={{
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          maxWidth: "100%",
+                        }}
+                      >
+                        {doc.label}
+                      </div>
+                    </Tooltip>
+                  }
+                  style={{ minHeight: "180px" }}
+                >
+                  <p>
+                    Link:{" "}
+                    <a
+                      href={doc.pdf_link}
+                      target="_blank"
+                      rel="document pdf link"
+                    >
+                      {doc.pdf_link}
+                    </a>
+                  </p>
+                  <p>URI: {doc.URI}</p>
+                  <Button type="link" onClick={() => addToTrainingSet(doc.URI)}>
+                    Добавить в обучающую выборку
+                  </Button>
+                </Card>
+              ))}
+            </div>{" "}
           </div>
         )}
       </div>
