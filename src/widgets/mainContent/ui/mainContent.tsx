@@ -260,7 +260,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
       return;
     }
     try {
-      const response = await fetch("https://markiz.ml0.ru/api/statistics");
+      const response = await fetch(`https://markiz.ml0.ru/api/statistics/${encodeURIComponent(selectedOntology.uri)}`);
       const data = await response.json();
 
       // Bar chart
@@ -373,7 +373,7 @@ export const MainContent: React.FC<MainContentProps> = ({ activeTab }) => {
   const renderReportsContent = () => {
     return (
       <div className="flex flex-col gap-8">
-        <h1 className="text-2xl font-bold">Отчеты и радары</h1>
+        <h1 className="text-2xl font-bold">Статистика</h1>
         <div>
           <h2 className="text-xl font-semibold mb-4">
             Количество документов по годам
